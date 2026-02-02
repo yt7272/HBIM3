@@ -1,0 +1,16 @@
+{
+  "name": "mergedplugin-tests",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Test infrastructure for MergedPlugin",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:list": "jest --listTests",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

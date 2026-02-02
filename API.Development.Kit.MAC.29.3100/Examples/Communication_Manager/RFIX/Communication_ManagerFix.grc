@@ -1,0 +1,36 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the Communication Manager Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_CommunicationManager
+}
+
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"Communication Manager"
+/* [  2] */		"API Test Add-on"
+}
+
+'STR#' 32500 "Strings for the Menu" {
+/* [   ] */		"Test"
+/* [   ] */		"Communication Manager"
+/* [  1] */			"Pass Custom Parameters"
+/* [  2] */			"Avoid the Setting Dialog"
+/* [  3] */			"-"
+/* [  4] */			"Test \"Put Text\" availability"
+/* [  5] */			"Call \"Put Text\""
+/* [  6] */			"-"
+/* [  7] */			"Link to client"
+/* [  8] */			"-"
+/* [  9] */			"Dump the 3D Model"
+/* [ 10] */			"-"
+/* [ 11] */			"Save External Files as DWG"
+/* [ 12] */			"Open DWG into library part"
+/* [ 13] */			"-"
+/* [ 14] */			"Import e57 Point Cloud to GSPC"
+}

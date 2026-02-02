@@ -1,0 +1,1522 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+	<title>ComponentInfo & IFC Property Reader</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style type="text/css">
+		/* CSS Variables for Industrial Dark Theme */
+		:root {
+			--bg-dark: #1a1d23;
+			--bg-card: #252a33;
+			--text-primary: #e2e8f0;
+			--text-secondary: #94a3b8;
+			--accent: #06b6d4;
+			--accent-hover: #22d3ee;
+			--border: #3f4a5c;
+			--hover: #2d3748;
+			--shadow: rgba(0, 0, 0, 0.3);
+			--success: #10b981;
+			--warning: #f59e0b;
+			--error: #ef4444;
+			--radius: 4px;
+			--transition: all 0.2s ease;
+		}
+
+		/* Base Reset */
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+			background-color: var(--bg-dark);
+			color: var(--text-primary);
+			font-size: 13px;
+			line-height: 1.4;
+			padding: 12px;
+			min-width: 450px;
+			min-height: 150px;
+			overflow-x: auto;
+			user-select: none;
+		}
+
+		/* Typography */
+		h1, h2, h3 {
+			font-weight: 600;
+			line-height: 1.2;
+		}
+
+		h2 {
+			font-size: 14px;
+			color: var(--accent);
+			margin-bottom: 8px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		h2::before {
+			content: '';
+			display: inline-block;
+			width: 12px;
+			height: 12px;
+			background-color: var(--accent);
+			border-radius: 2px;
+		}
+
+		.plugin-title {
+			font-size: 18px;
+			font-weight: 600;
+			color: #06b6d4; /* var(--accent) */
+			margin-bottom: 12px;
+			padding-bottom: 8px;
+			border-bottom: 2px solid #3f4a5c; /* var(--border) */
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.plugin-title::before {
+			content: '📋';
+			font-size: 16px;
+		}
+
+		/* Header Section */
+		.header {
+			background: #252a33; /* var(--bg-card) */
+			border-radius: 4px; /* var(--radius) */
+			padding: 12px;
+			margin-bottom: 12px;
+			border: 1px solid #3f4a5c; /* var(--border) */
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* var(--shadow) */
+		}
+
+		.element-summary {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+			gap: 10px;
+			margin-bottom: 12px;
+		}
+
+		.summary-item {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.summary-label {
+			font-size: 11px;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			margin-bottom: 2px;
+		}
+
+		.summary-value {
+			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+			font-size: 12px;
+			background: rgba(0, 0, 0, 0.2);
+			padding: 4px 8px;
+			border-radius: var(--radius);
+			border-left: 3px solid var(--accent);
+			word-break: break-all;
+		}
+
+		/* Tab Navigation */
+		.tab-navigation {
+			display: flex;
+			gap: 2px;
+			margin-bottom: 12px;
+			border-bottom: 2px solid var(--border);
+		}
+
+		.tab-button {
+			background: transparent;
+			border: none;
+			padding: 8px 16px;
+			color: var(--text-secondary);
+			font-size: 13px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: var(--transition);
+			position: relative;
+			border-radius: var(--radius) var(--radius) 0 0;
+		}
+
+		.tab-button:hover {
+			color: var(--text-primary);
+			background: rgba(63, 74, 92, 0.2);
+		}
+
+		.tab-button.active {
+			color: var(--accent);
+			background: var(--bg-card);
+			border-bottom: 2px solid var(--accent);
+		}
+
+		.tab-button.active::after {
+			content: '';
+			position: absolute;
+			bottom: -2px;
+			left: 0;
+			right: 0;
+			height: 2px;
+			background: var(--accent);
+		}
+
+		/* Tab Content */
+		.tab-content {
+			display: none;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+
+		/* ComponentInfo Form */
+		.form-group {
+			margin-bottom: 12px;
+		}
+
+		.form-label {
+			display: block;
+			font-size: 12px;
+			color: var(--text-secondary);
+			margin-bottom: 4px;
+			font-weight: 500;
+		}
+
+		.form-input {
+			width: 100%;
+			padding: 8px 12px;
+			background: var(--bg-dark);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			color: var(--text-primary);
+			font-size: 13px;
+			transition: var(--transition);
+		}
+
+		.form-input:focus {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+		}
+
+		.form-input:disabled {
+			background: rgba(26, 29, 35, 0.5);
+			color: var(--text-secondary);
+			cursor: not-allowed;
+		}
+
+		.photo-preview {
+			width: 100%;
+			height: 200px;
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px dashed var(--border);
+			border-radius: var(--radius);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-bottom: 12px;
+			overflow: hidden;
+		}
+
+		.photo-preview img {
+			max-width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
+
+		.photo-preview-placeholder {
+			color: var(--text-secondary);
+			font-size: 12px;
+			text-align: center;
+		}
+
+		/* Controls Bar */
+		.controls {
+			display: flex;
+			gap: 8px;
+			margin-top: 12px;
+		}
+
+		.search-box {
+			flex: 1;
+			position: relative;
+		}
+
+		.search-box input {
+			width: 100%;
+			padding: 6px 10px 6px 32px;
+			background: var(--bg-dark);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			color: var(--text-primary);
+			font-size: 12px;
+			transition: var(--transition);
+		}
+
+		.search-box input:focus {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+		}
+
+		.search-box::before {
+			content: '🔍';
+			position: absolute;
+			left: 10px;
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 12px;
+			color: var(--text-secondary);
+			pointer-events: none;
+		}
+
+		button {
+			background: var(--accent);
+			color: white;
+			border: none;
+			padding: 6px 12px;
+			border-radius: var(--radius);
+			font-size: 12px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: var(--transition);
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			white-space: nowrap;
+		}
+
+		button:hover {
+			background: var(--accent-hover);
+			transform: translateY(-1px);
+			box-shadow: 0 2px 4px var(--shadow);
+		}
+
+		button:active {
+			transform: translateY(0);
+		}
+
+		button.secondary {
+			background: transparent;
+			border: 1px solid var(--border);
+			color: var(--text-secondary);
+		}
+
+		button.secondary:hover {
+			background: var(--hover);
+			color: var(--text-primary);
+		}
+
+		button:disabled {
+			background: rgba(6, 182, 212, 0.3);
+			cursor: not-allowed;
+			transform: none;
+			box-shadow: none;
+		}
+
+		button.secondary:disabled {
+			background: transparent;
+			border-color: rgba(63, 74, 92, 0.5);
+			color: rgba(148, 163, 184, 0.5);
+		}
+
+		/* Property Groups */
+		.property-groups {
+			margin-top: 16px;
+			overflow-x: auto;
+			max-width: 100%;
+		}
+
+		.group {
+			background: var(--bg-card);
+			border-radius: var(--radius);
+			border: 1px solid var(--border);
+			margin-bottom: 10px;
+			overflow: hidden;
+		}
+
+		.group-header {
+			padding: 10px 12px;
+			background: rgba(63, 74, 92, 0.3);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			cursor: pointer;
+			transition: var(--transition);
+		}
+
+		.group-header:hover {
+			background: rgba(63, 74, 92, 0.5);
+		}
+
+		.group-header h3 {
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--text-primary);
+		}
+
+		.group-badge {
+			background: var(--accent);
+			color: white;
+			font-size: 10px;
+			padding: 2px 6px;
+			border-radius: 10px;
+			font-weight: 600;
+		}
+
+		.group-content {
+			padding: 0;
+			max-height: 0;
+			overflow: hidden;
+			transition: max-height 0.3s ease;
+		}
+
+		.group.expanded .group-content {
+			max-height: 2000px;
+		}
+
+		/* Property Table */
+		.property-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 12px;
+		}
+
+		.property-table thead {
+			background: rgba(0, 0, 0, 0.2);
+			border-bottom: 2px solid var(--border);
+		}
+
+		.property-table th {
+			padding: 8px 10px;
+			text-align: left;
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			font-size: 11px;
+			letter-spacing: 0.05em;
+		}
+
+		.property-table tbody tr {
+			border-bottom: 1px solid rgba(63, 74, 92, 0.3);
+			transition: var(--transition);
+		}
+
+		.property-table tbody tr:hover {
+			background: var(--hover);
+		}
+
+		.property-table td {
+			padding: 8px 10px;
+			vertical-align: top;
+		}
+
+		.property-name {
+			font-weight: 500;
+			color: var(--text-primary);
+			min-width: 140px;
+		}
+
+		.property-value {
+			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+			color: var(--accent);
+			word-break: break-word;
+			max-width: 200px;
+		}
+
+		.property-type {
+			color: var(--text-secondary);
+			font-style: italic;
+			font-size: 11px;
+		}
+
+		.property-unit {
+			color: var(--success);
+			font-size: 11px;
+		}
+
+		/* Empty & Loading States */
+		.empty-state, .loading-state {
+			text-align: center;
+			padding: 30px 20px;
+			color: var(--text-secondary);
+		}
+
+		.empty-state h3, .loading-state h3 {
+			color: var(--text-secondary);
+			margin-bottom: 8px;
+		}
+
+		/* Warning Notification */
+		.warning-notice {
+			background: rgba(245, 158, 11, 0.1);
+			border: 1px solid var(--warning);
+			border-radius: var(--radius);
+			padding: 8px 12px;
+			margin: 10px 0;
+			color: var(--warning);
+			font-size: 12px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.warning-notice::before {
+			content: '⚠️';
+			font-size: 14px;
+		}
+
+		/* Error Notification */
+		.error-notice {
+			background: rgba(239, 68, 68, 0.1);
+			border: 1px solid var(--error);
+			border-radius: var(--radius);
+			padding: 8px 12px;
+			margin: 10px 0;
+			color: var(--error);
+			font-size: 12px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.error-notice::before {
+			content: '❌';
+			font-size: 14px;
+		}
+
+		/* Responsive */
+		@media (max-width: 500px) {
+			.element-summary {
+				grid-template-columns: 1fr;
+			}
+			.controls {
+				flex-wrap: wrap;
+			}
+			.property-table {
+				display: block;
+				overflow-x: auto;
+			}
+		}
+
+		/* Utility */
+		.hidden {
+			display: none !important;
+		}
+
+		.fade-in {
+			animation: fadeIn 0.3s ease;
+		}
+
+		@keyframes fadeIn {
+			from { opacity: 0; }
+			to { opacity: 1; }
+		}
+
+		.unsaved-indicator {
+			color: var(--warning);
+			font-weight: bold;
+			margin-left: 2px;
+		}
+	</style>
+</head>
+
+<body class="palette">
+	<div class="header">
+		<div class="plugin-title">构件信息与IFC属性 <span id="bridge-status" style="font-size: 10px; color: #ef4444; margin-left: 8px;">(桥接检测中...)</span></div>
+		<div class="element-summary">
+			<div class="summary-item">
+				<div class="summary-label">GUID</div>
+				<div id="summary-guid" class="summary-value">{GUID}</div>
+			</div>
+			<div class="summary-item">
+				<div class="summary-label">Type</div>
+				<div id="summary-type" class="summary-value">{Element Type}</div>
+			</div>
+			<div class="summary-item">
+				<div class="summary-label">Element ID</div>
+				<div id="summary-id" class="summary-value">{Element ID}</div>
+			</div>
+			<div class="summary-item">
+				<div class="summary-label">Plugin Version</div>
+				<div id="summary-version" class="summary-value">0.0.0.0</div>
+			</div>
+		</div>
+		<div id="multi-selection-warning" class="warning-notice hidden">
+			⚠️ Multiple elements selected. Showing properties for the first element only.
+		</div>
+	</div>
+
+	<!-- Tab Navigation -->
+	<div class="tab-navigation">
+		<button id="componentinfo-tab" class="tab-button active">ComponentInfo<span id="componentinfo-unsaved-indicator" class="unsaved-indicator hidden"> *</span></button>
+		<button id="ifc-properties-tab" class="tab-button">IFC Properties</button>
+	</div>
+
+	<!-- ComponentInfo Tab Content -->
+	<div id="componentinfo-content" class="tab-content active">
+		<div class="form-group">
+			<label class="form-label" for="component-id">构件编号</label>
+			<input type="text" id="component-id" class="form-input" placeholder="Enter component ID" disabled>
+		</div>
+		
+		<div class="form-group">
+			<label class="form-label" for="photo-description">照片描述</label>
+			<input type="text" id="photo-description" class="form-input" placeholder="Enter photo description" disabled>
+		</div>
+		
+		<div class="form-group">
+			<label class="form-label">照片预览</label>
+			<div class="photo-preview">
+				<div class="photo-preview-placeholder">No photo selected</div>
+			</div>
+		</div>
+		
+		<div class="controls">
+			<button id="select-photos-btn" class="secondary" disabled>选择照片</button>
+			<button id="view-photos-btn" class="secondary" disabled>查看照片</button>
+			<button id="edit-info-btn">编辑信息</button>
+			<button id="save-info-btn" class="hidden">保存</button>
+			<button id="cancel-edit-btn" class="secondary hidden">取消编辑</button>
+		</div>
+		
+		<div id="photo-paths" class="empty-state hidden">
+			<h3>Photo Paths</h3>
+			<p id="photo-paths-text"></p>
+		</div>
+	</div>
+
+	<!-- IFC Properties Tab Content -->
+	<div id="ifc-properties-content" class="tab-content">
+		<div class="controls">
+			<div class="search-box">
+				<input type="text" id="property-search" placeholder="Search properties..." />
+			</div>
+			<button id="refresh-btn" title="Refresh properties">
+				↻ Refresh
+			</button>
+			<button id="view-ifc-properties-btn">查看构件的IFC属性</button>
+		</div>
+
+		<div id="loading-state" class="loading-state hidden">
+			<h3>Loading IFC properties...</h3>
+			<p>Please wait while fetching property data.</p>
+		</div>
+
+		<div id="empty-state" class="empty-state hidden">
+			<h3>No element selected</h3>
+			<p>Select an element in Archicad to view its IFC properties.</p>
+		</div>
+		
+		<div id="no-match-state" class="empty-state hidden">
+			<h3>No matching properties</h3>
+			<p>Try adjusting your search to find what you're looking for.</p>
+		</div>
+		
+		<div id="error-state" class="error-notice hidden">
+			<h3>Error loading IFC properties</h3>
+			<p id="error-message">An unexpected error occurred while fetching IFC properties.</p>
+			<button id="retry-btn" class="secondary" style="margin-top: 8px;">Retry</button>
+		</div>
+
+		<div id="property-groups" class="property-groups">
+			<!-- Property groups will be inserted here by JavaScript -->
+		</div>
+	</div>
+
+	<script type="text/javascript">
+		// Mock data for demonstration
+		const mockPropertyData = {
+			guid: "{335B0B7A-1234-5678-ABCD-EF0123456789}",
+			type: "IfcWall",
+			elementId: "1001",
+			properties: [
+				{
+					schema: "IFC4",
+					category: "General",
+					name: "Name",
+					value: "Interior Wall 001",
+					type: "IfcLabel",
+					unit: null
+				},
+				{
+					schema: "IFC4",
+					category: "General",
+					name: "Description",
+					value: "Load bearing wall with fire rating",
+					type: "IfcText",
+					unit: null
+				},
+				{
+					schema: "IFC4",
+					category: "Dimensions",
+					name: "Length",
+					value: "5000.0",
+					type: "IfcLengthMeasure",
+					unit: "mm"
+				},
+				{
+					schema: "IFC4",
+					category: "Dimensions",
+					name: "Height",
+					value: "3000.0",
+					type: "IfcLengthMeasure",
+					unit: "mm"
+				},
+				{
+					schema: "IFC2x3",
+					category: "Materials",
+					name: "Material",
+					value: "Concrete",
+					type: "IfcMaterial",
+					unit: null
+				},
+				{
+					schema: "IFC2x3",
+					category: "Materials",
+					name: "Thickness",
+					value: "200.0",
+					type: "IfcLengthMeasure",
+					unit: "mm"
+				},
+				{
+					schema: "IFC2x3",
+					category: "Performance",
+					name: "Fire Rating",
+					value: "120",
+					type: "IfcTimeMeasure",
+					unit: "minutes"
+				}
+			]
+		};
+
+		let currentProperties = []; // Holds properties for currently selected element, initially empty
+		let debugInfo = {}; // Store debug information for display
+		let isEditMode = false;
+		let currentElementGuid = null; // GUID of currently selected element for ComponentInfo operations
+		let currentPhotoPaths = []; // Photo paths for currently selected element
+		let hasUnsavedChanges = false; // Track unsaved changes in ComponentInfo
+		
+		function updateUnsavedIndicator() {
+			const indicator = document.getElementById('componentinfo-unsaved-indicator');
+			if (indicator) {
+				if (hasUnsavedChanges) {
+					indicator.classList.remove('hidden');
+				} else {
+					indicator.classList.add('hidden');
+				}
+			}
+		}
+		
+		// Tab switching functionality
+		function switchTab(tabId) {
+			// Hide all tab contents
+			document.querySelectorAll('.tab-content').forEach(content => {
+				content.classList.remove('active');
+			});
+			
+			// Deactivate all tab buttons
+			document.querySelectorAll('.tab-button').forEach(button => {
+				button.classList.remove('active');
+			});
+			
+			// Activate selected tab
+			document.getElementById(tabId + '-content').classList.add('active');
+			document.getElementById(tabId + '-tab').classList.add('active');
+		}
+		
+		// Event listeners for tab buttons
+		document.getElementById('componentinfo-tab').addEventListener('click', () => {
+			switchTab('componentinfo');
+		});
+		
+		document.getElementById('ifc-properties-tab').addEventListener('click', () => {
+			switchTab('ifc-properties');
+		});
+		
+		// Transform C++ property array format to UI property object format
+		// C++ format: [propertySetName, propertyName, propertyValue, propertyType, unit, isValid]
+		// UI format: {schema, category, name, value, type, unit}
+		function transformCppPropertiesToUI(cppProperties) {
+			console.log('transformCppPropertiesToUI called with:', cppProperties);
+			if (!cppProperties) {
+				console.warn('cppProperties is null or undefined');
+				return [];
+			}
+			if (!Array.isArray(cppProperties)) {
+				console.warn('cppProperties is not an array:', typeof cppProperties, cppProperties);
+				return [];
+			}
+			console.log(`Received ${cppProperties.length} properties from C++ backend`);
+			const uiProperties = [];
+			for (let i = 0; i < cppProperties.length; i++) {
+				const prop = cppProperties[i];
+				if (!Array.isArray(prop) || prop.length < 6) {
+					console.warn(`Property at index ${i} is invalid:`, prop);
+					continue;
+				}
+				const [propertySetName, propertyName, propertyValue, propertyType, unit, isValid] = prop;
+				// Filter out invalid properties
+				if (isValid === false) {
+					console.log(`Property ${propertySetName}.${propertyName} is invalid (isValid=false), skipping`);
+					continue;
+				}
+				// Map propertySetName -> category
+				// For schema, we can try to extract IFC version from propertySetName, default to "IFC"
+				let schema = "IFC";
+				const schemaMatch = propertySetName.match(/IFC(2X3|4|2x3)?/i);
+				if (schemaMatch) schema = schemaMatch[0].toUpperCase();
+				uiProperties.push({
+					schema: schema,
+					category: propertySetName,
+					name: propertyName,
+					value: propertyValue,
+					type: propertyType,
+					unit: unit || null
+				});
+				// Log DEBUG_INFO properties
+				if (propertySetName === 'DEBUG_INFO') {
+					console.log(`DEBUG_INFO: ${propertyName} = ${propertyValue}`);
+				}
+			}
+			console.log(`Transformed to ${uiProperties.length} UI properties`);
+			return uiProperties;
+		}
+		
+		// Group properties by category (propertySetName)
+		function groupProperties(properties) {
+			const groups = {};
+			properties.forEach(prop => {
+				const key = prop.category; // propertySetName
+				if (!groups[key]) {
+					groups[key] = {
+						schema: prop.schema,
+						category: prop.category,
+						properties: []
+					};
+				}
+				groups[key].properties.push(prop);
+			});
+			return Object.values(groups);
+		}
+
+		// Render property groups
+		function renderPropertyGroups(groups) {
+			const container = document.getElementById('property-groups');
+			container.innerHTML = '';
+
+			if (groups.length === 0) {
+				// Check if we have an element selected (empty-state hidden)
+				const emptyState = document.getElementById('empty-state');
+				if (emptyState.classList.contains('hidden')) {
+					// Element is selected but no properties match filter
+					document.getElementById('no-match-state').classList.remove('hidden');
+				} else {
+					// No element selected
+					emptyState.classList.remove('hidden');
+				}
+				return;
+			} else {
+				// Hide both empty and no-match states
+				document.getElementById('empty-state').classList.add('hidden');
+				document.getElementById('no-match-state').classList.add('hidden');
+			}
+
+			// Lazy rendering: render groups in batches for better performance
+			const batchSize = 3; // Render 3 groups per frame
+			let currentIndex = 0;
+			
+			function renderNextBatch() {
+				const batch = groups.slice(currentIndex, currentIndex + batchSize);
+				currentIndex += batchSize;
+				
+				batch.forEach(group => {
+					const groupElement = document.createElement('div');
+					groupElement.className = 'group expanded';
+					groupElement.innerHTML = `
+						<div class="group-header" onclick="toggleGroup(this.parentElement)">
+							<h3>${group.category}</h3>
+							<span class="group-badge">${group.properties.length}</span>
+						</div>
+						<div class="group-content">
+							<table class="property-table">
+								<thead>
+									<tr>
+										<th>Property Name</th>
+										<th>Value</th>
+										<th>Type</th>
+										<th>Unit</th>
+									</tr>
+								</thead>
+								<tbody>
+									${group.properties.map(prop => `
+										<tr>
+											<td class="property-name">${prop.name}</td>
+											<td class="property-value">${prop.value}</td>
+											<td class="property-type">${prop.type}</td>
+											<td class="property-unit">${prop.unit || '—'}</td>
+										</tr>
+									`).join('')}
+								</tbody>
+							</table>
+						</div>
+					`;
+					container.appendChild(groupElement);
+				});
+				
+				// If there are more groups to render, schedule next batch
+				if (currentIndex < groups.length) {
+					requestAnimationFrame(renderNextBatch);
+				}
+			}
+			
+			// Start rendering
+			requestAnimationFrame(renderNextBatch);
+		}
+
+		// Toggle group expansion
+		function toggleGroup(groupElement) {
+			groupElement.classList.toggle('expanded');
+		}
+
+		// Filter properties based on search input
+		function filterProperties(searchTerm) {
+			const filtered = currentProperties.filter(prop => 
+				prop.name.toLowerCase().includes(searchTerm) ||
+				prop.value.toLowerCase().includes(searchTerm) ||
+				prop.type.toLowerCase().includes(searchTerm) ||
+				prop.category.toLowerCase().includes(searchTerm)
+			);
+			const groups = groupProperties(filtered);
+			renderPropertyGroups(groups);
+		}
+
+		// Update summary from selected element
+		function updateElementSummary(guid, type, elementId) {
+			document.getElementById('summary-guid').textContent = guid;
+			document.getElementById('summary-type').textContent = type;
+			document.getElementById('summary-id').textContent = elementId;
+		}
+
+		// Show loading state
+		function showLoading() {
+			document.getElementById('loading-state').classList.remove('hidden');
+			document.getElementById('property-groups').classList.add('hidden');
+			document.getElementById('empty-state').classList.add('hidden');
+			document.getElementById('error-state').classList.add('hidden');
+		}
+
+		// Hide loading state
+		function hideLoading() {
+			document.getElementById('loading-state').classList.add('hidden');
+			document.getElementById('property-groups').classList.remove('hidden');
+		}
+
+		// Show error state
+		function showError(errorMessage) {
+			document.getElementById('error-message').textContent = errorMessage || 'An unexpected error occurred while fetching IFC properties.';
+			document.getElementById('error-state').classList.remove('hidden');
+			document.getElementById('property-groups').classList.add('hidden');
+			document.getElementById('loading-state').classList.add('hidden');
+			document.getElementById('empty-state').classList.add('hidden');
+			document.getElementById('no-match-state').classList.add('hidden');
+		}
+
+		// Main function to load and display properties
+		function loadIFCProperties(elementInfos) {
+			console.log('loadIFCProperties called with elementInfos:', elementInfos);
+			showLoading();
+
+			// Simulate API delay (keep for fallback)
+			setTimeout(() => {
+				if (!elementInfos || elementInfos.length === 0) {
+					document.getElementById('empty-state').classList.remove('hidden');
+					document.getElementById('no-match-state').classList.add('hidden');
+					document.getElementById('property-groups').classList.add('hidden');
+					updateElementSummary('—', '—', '—');
+					currentProperties = [];
+					// Hide multi-selection warning
+					document.getElementById('multi-selection-warning').classList.add('hidden');
+					hideLoading();
+					return;
+				}
+				
+				// Show/hide multi-selection warning
+				const warning = document.getElementById('multi-selection-warning');
+				if (elementInfos.length > 1) {
+					warning.classList.remove('hidden');
+				} else {
+					warning.classList.add('hidden');
+				}
+				
+				// Use first selected element
+				const elem = elementInfos[0];
+				const elementGuid = elem[0];
+				updateElementSummary(elem[0], elem[1], elem[2]);
+				
+				// Try to fetch real IFC properties from C++ backend
+				if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetAllIFCProperties === 'function') {
+					console.log('ACAPI.GetAllIFCProperties available, calling with elementGuid:', elementGuid);
+					ACAPI.GetAllIFCProperties(elementGuid)
+						.then(cppProperties => {
+							console.log('ACAPI.GetAllIFCProperties returned:', cppProperties);
+							// Transform C++ property format to UI format
+							const uiProperties = transformCppPropertiesToUI(cppProperties);
+							console.log('After transformation:', uiProperties.length, 'UI properties');
+							if (uiProperties.length === 0) {
+								// If no properties returned, fall back to mock data for testing
+								console.warn('No IFC properties returned from backend, using mock data for demonstration');
+								console.warn('Raw C++ properties that were received:', cppProperties);
+								currentProperties = mockPropertyData.properties;
+							} else {
+								console.log('Using real IFC properties from backend');
+								currentProperties = uiProperties;
+							}
+							
+							const groups = groupProperties(currentProperties);
+							console.log('Grouped into', groups.length, 'groups');
+							renderPropertyGroups(groups);
+							document.getElementById('empty-state').classList.add('hidden');
+							document.getElementById('no-match-state').classList.add('hidden');
+							hideLoading();
+						})
+						.catch(error => {
+							console.error('Failed to fetch IFC properties:', error);
+							// Show error to user
+							showError(`Failed to fetch IFC properties: ${error.message || error}`);
+							hideLoading();
+						});
+				} else {
+					// ACAPI not available, use mock data (for testing outside Archicad)
+					console.warn('ACAPI not available, using mock data for demonstration');
+					currentProperties = mockPropertyData.properties;
+					
+					const groups = groupProperties(currentProperties);
+					renderPropertyGroups(groups);
+					document.getElementById('empty-state').classList.add('hidden');
+					document.getElementById('no-match-state').classList.add('hidden');
+					hideLoading();
+				}
+			}, 300);
+		}
+		
+		// Update plugin version display
+		function updatePluginVersion() {
+			const versionElement = document.getElementById('summary-version');
+			if (!versionElement) return;
+			
+			// Clear cache, avoid old version info residue
+			if (typeof ACAPI !== 'undefined' && ACAPI.ClearIFCPropertyCache) {
+				ACAPI.ClearIFCPropertyCache();
+			}
+			
+			// Get plugin version
+			if (typeof ACAPI !== 'undefined' && ACAPI.GetPluginVersion) {
+				ACAPI.GetPluginVersion().then(version => {
+					console.log('Plugin version from C++:', version);
+					versionElement.textContent = version;
+				}).catch(error => {
+					console.warn('Failed to get plugin version:', error);
+					versionElement.textContent = 'unknown';
+				});
+			} else {
+				// ACAPI not available, use default
+				versionElement.textContent = '0.0.0.0';
+			}
+		}
+		
+		// ComponentInfo edit mode functions
+ 		function enterEditMode() {
+			isEditMode = true;
+			hasUnsavedChanges = false;
+			updateUnsavedIndicator();
+			document.getElementById('component-id').disabled = false;
+			document.getElementById('photo-description').disabled = false;
+			document.getElementById('select-photos-btn').disabled = false;
+			// Hide edit button, show save and cancel buttons
+			document.getElementById('edit-info-btn').classList.add('hidden');
+			document.getElementById('save-info-btn').classList.remove('hidden');
+			document.getElementById('cancel-edit-btn').classList.remove('hidden');
+			document.getElementById('view-ifc-properties-btn').disabled = true;
+			// Notify C++ backend about edit mode change
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.ComponentInfo_SetEditMode === 'function') {
+				ACAPI.ComponentInfo_SetEditMode('true').catch(err => console.warn('Failed to set edit mode:', err));
+			}
+		}
+		
+ 		function exitEditMode(save) {
+			isEditMode = false;
+			if (!save) {
+				hasUnsavedChanges = false;
+				updateUnsavedIndicator();
+			}
+			document.getElementById('component-id').disabled = true;
+			document.getElementById('photo-description').disabled = true;
+			document.getElementById('select-photos-btn').disabled = true;
+			// Show edit button, hide save and cancel buttons
+			document.getElementById('edit-info-btn').classList.remove('hidden');
+			document.getElementById('edit-info-btn').textContent = '编辑信息';
+			document.getElementById('save-info-btn').classList.add('hidden');
+			document.getElementById('cancel-edit-btn').classList.add('hidden');
+			document.getElementById('view-ifc-properties-btn').disabled = false;
+			// Notify C++ backend about edit mode change
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.ComponentInfo_SetEditMode === 'function') {
+				ACAPI.ComponentInfo_SetEditMode('false').catch(err => console.warn('Failed to set edit mode:', err));
+			}
+			
+			if (save && currentElementGuid) {
+				// Save component info using API
+				const componentId = document.getElementById('component-id').value;
+				const photoDescription = document.getElementById('photo-description').value;
+				
+				if (typeof ACAPI.ComponentInfo_SaveComponentInfo === 'function') {
+					ACAPI.ComponentInfo_SaveComponentInfo([currentElementGuid, componentId, photoDescription, currentPhotoPaths])
+						.then(function (success) {
+							if (success) {
+								console.log('Component info saved successfully');
+								hasUnsavedChanges = false;
+								updateUnsavedIndicator();
+							} else {
+								console.error('Failed to save component info');
+							}
+						})
+						.catch(function (err) {
+							console.error('Error saving component info:', err);
+						});
+				} else {
+					console.warn('ComponentInfo_SaveComponentInfo API not available');
+				}
+			}
+		}
+		
+		// Event listeners
+		document.addEventListener('DOMContentLoaded', function() {
+			// Debug: log ACAPI availability
+			console.log('HTML loaded: Checking ACAPI availability');
+			function updateBridgeStatus(isAvailable, funcs, version) {
+				const statusEl = document.getElementById('bridge-status');
+				if (!statusEl) return;
+				if (isAvailable) {
+					statusEl.textContent = `(桥接就绪, ${funcs.length} 个函数)`;
+					statusEl.style.color = '#10b981'; // success green
+				} else {
+					statusEl.textContent = '(桥接未连接)';
+					statusEl.style.color = '#ef4444'; // error red
+				}
+				if (version) {
+					statusEl.textContent += ` v${version}`;
+				}
+			}
+			
+			if (typeof ACAPI !== 'undefined') {
+				console.log('ACAPI object is defined');
+				// List available functions
+				const funcs = Object.keys(ACAPI).filter(key => typeof ACAPI[key] === 'function');
+				console.log('ACAPI functions:', funcs);
+				updateBridgeStatus(true, funcs, null);
+				// Try to call GetPluginVersion to test bridge
+				if (ACAPI.GetPluginVersion) {
+					ACAPI.GetPluginVersion().then(version => {
+						console.log('Plugin version from ACAPI:', version);
+						updateBridgeStatus(true, funcs, version);
+					}).catch(err => {
+						console.error('Failed to get plugin version:', err);
+						updateBridgeStatus(true, funcs, 'error');
+				});
+			}
+			// Initialize unsaved changes indicator
+			updateUnsavedIndicator();
+		}
+			
+			// Initialize plugin version display
+			updatePluginVersion();
+			
+			// Search input for IFC properties
+			const searchInput = document.getElementById('property-search');
+			searchInput.addEventListener('input', function(e) {
+				filterProperties(e.target.value.toLowerCase());
+			});
+
+			// ComponentInfo input change tracking
+			const componentIdInput = document.getElementById('component-id');
+			const photoDescriptionInput = document.getElementById('photo-description');
+			
+			componentIdInput.addEventListener('input', function() {
+				if (isEditMode) {
+					hasUnsavedChanges = true;
+					updateUnsavedIndicator();
+				}
+			});
+			
+			photoDescriptionInput.addEventListener('input', function() {
+				if (isEditMode) {
+					hasUnsavedChanges = true;
+					updateUnsavedIndicator();
+				}
+			});
+
+			// Refresh button
+			document.getElementById('refresh-btn').addEventListener('click', function() {
+				// In real implementation, re-fetch properties for current selection
+				if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+					ACAPI.GetSelectedElements().then(loadIFCProperties);
+				}
+			});
+
+			// Retry button for error state
+			document.getElementById('retry-btn').addEventListener('click', function() {
+				document.getElementById('error-state').classList.add('hidden');
+				if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+					ACAPI.GetSelectedElements().then(loadIFCProperties);
+				}
+			});
+			
+			// View IFC Properties button
+			document.getElementById('view-ifc-properties-btn').addEventListener('click', function() {
+				if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+					ACAPI.GetSelectedElements().then(loadIFCProperties);
+				}
+			});
+			
+			// Edit info button
+			document.getElementById('edit-info-btn').addEventListener('click', function() {
+				enterEditMode();
+			});
+			
+			// Save info button
+			document.getElementById('save-info-btn').addEventListener('click', function() {
+				exitEditMode(true); // Save changes
+			});
+			
+			// Cancel edit button
+			document.getElementById('cancel-edit-btn').addEventListener('click', function() {
+				exitEditMode(false); // Cancel without saving
+			});
+			
+			// Select photos button
+			document.getElementById('select-photos-btn').addEventListener('click', function() {
+				if (!currentElementGuid) {
+					console.error('No element selected');
+					return;
+				}
+				
+				if (typeof ACAPI.ComponentInfo_SelectPhotos === 'function') {
+					ACAPI.ComponentInfo_SelectPhotos(currentElementGuid).then(function (selectedPaths) {
+						if (selectedPaths && selectedPaths.length > 0) {
+							// Append new photo paths to existing ones
+							currentPhotoPaths = currentPhotoPaths.concat(selectedPaths);
+							hasUnsavedChanges = true;
+							updateUnsavedIndicator();
+							// Save immediately with updated photo paths
+							const componentId = document.getElementById('component-id').value;
+							const photoDescription = document.getElementById('photo-description').value;
+							
+							ACAPI.ComponentInfo_SaveComponentInfo([currentElementGuid, componentId, photoDescription, currentPhotoPaths])
+								.then(function (success) {
+									if (success) {
+										console.log('Photos added and saved successfully');
+										hasUnsavedChanges = false;
+										updateUnsavedIndicator();
+										// Enable view photos button
+										document.getElementById('view-photos-btn').disabled = false;
+									} else {
+										console.error('Failed to save photos');
+									}
+								})
+								.catch(function (err) {
+									console.error('Error saving photos:', err);
+								});
+						}
+					}).catch(function (err) {
+						console.error('Error selecting photos:', err);
+					});
+				} else {
+					console.warn('ComponentInfo_SelectPhotos API not available');
+				}
+			});
+			
+			// View photos button
+			document.getElementById('view-photos-btn').addEventListener('click', function() {
+				if (!currentElementGuid) {
+					console.error('No element selected');
+					return;
+				}
+				
+				if (typeof ACAPI.ComponentInfo_ViewPhotos === 'function') {
+					ACAPI.ComponentInfo_ViewPhotos(currentElementGuid)
+						.then(function (success) {
+							if (!success) {
+								console.error('Failed to open photo folder');
+							}
+						})
+						.catch(function (err) {
+							console.error('Error opening photo folder:', err);
+						});
+				} else {
+					console.warn('ComponentInfo_ViewPhotos API not available');
+				}
+			});
+
+			// Initial load - no element selected
+			// Show empty state initially
+			document.getElementById('empty-state').classList.remove('hidden');
+			// Clear any previous properties
+			currentProperties = [];
+			const groups = groupProperties(currentProperties);
+			renderPropertyGroups(groups);
+		});
+
+		// Keep existing ACAPI bridge functions
+		function UpdateSelectedElements() {
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+				ACAPI.GetSelectedElements().then(function (elemInfos) {
+					loadIFCProperties(elemInfos);
+					
+					// Update ComponentInfo fields
+					if (elemInfos && elemInfos.length > 0) {
+						const elem = elemInfos[0];
+						currentElementGuid = elem[0]; // Store GUID for ComponentInfo operations
+						
+						// Load component info if API is available
+						if (typeof ACAPI.ComponentInfo_GetComponentInfo === 'function') {
+							ACAPI.ComponentInfo_GetComponentInfo(currentElementGuid).then(function (componentInfo) {
+								if (componentInfo && componentInfo.componentId !== undefined) {
+									document.getElementById('component-id').value = componentInfo.componentId || '';
+									document.getElementById('photo-description').value = componentInfo.photoDescription || '';
+									currentPhotoPaths = componentInfo.photoPaths || [];
+									// Update photo paths display if needed
+									if (currentPhotoPaths.length > 0) {
+										document.getElementById('view-photos-btn').disabled = false;
+									} else {
+										document.getElementById('view-photos-btn').disabled = true;
+									}
+								} else {
+									// No component info stored yet
+									document.getElementById('component-id').value = '';
+									document.getElementById('photo-description').value = '';
+									currentPhotoPaths = [];
+									document.getElementById('view-photos-btn').disabled = true;
+								}
+							}).catch(function (err) {
+								console.error('Failed to load component info:', err);
+								document.getElementById('component-id').value = '';
+								document.getElementById('photo-description').value = '';
+								currentPhotoPaths = [];
+								document.getElementById('view-photos-btn').disabled = true;
+							});
+						} else {
+							// ComponentInfo_GetComponentInfo API not available
+							document.getElementById('component-id').value = '';
+							document.getElementById('photo-description').value = '';
+							document.getElementById('view-photos-btn').disabled = false;
+						}
+					} else {
+						// No element selected
+						currentElementGuid = null;
+						document.getElementById('component-id').value = '';
+						document.getElementById('photo-description').value = '';
+						document.getElementById('view-photos-btn').disabled = true;
+					}
+				});
+			}
+		}
+
+		function UpdateIFCProperties() {
+			// Refresh properties for currently selected element(s)
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+				ACAPI.GetSelectedElements().then(function (elemInfos) {
+					loadIFCProperties(elemInfos);
+				});
+			}
+		}
+	</script>
+</body>
+</html>
+			const statsDiv = document.getElementById('cache-stats-result');
+			resultDiv.innerHTML = 'Testing cached properties...<br>';
+			
+			// First get selected element
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+				ACAPI.GetSelectedElements().then(function(elemInfos) {
+					if (!elemInfos || elemInfos.length === 0) {
+						resultDiv.innerHTML += '❌ No element selected. Please select an element in Archicad.<br>';
+						return;
+					}
+					
+					const elem = elemInfos[0];
+					const elementGuid = elem[0];
+					resultDiv.innerHTML += `Testing element: ${elementGuid}<br>`;
+					
+					// First call (should miss cache)
+					const startTime1 = performance.now();
+					if (typeof ACAPI.GetCachedIFCProperties === 'function') {
+						ACAPI.GetCachedIFCProperties(elementGuid).then(function(cppProperties) {
+							const endTime1 = performance.now();
+							const time1 = endTime1 - startTime1;
+							const uiProperties = transformCppPropertiesToUI(cppProperties);
+							
+							resultDiv.innerHTML += `First call (cache miss): ${uiProperties.length} properties in ${time1.toFixed(2)}ms<br>`;
+							
+							// Second call (should hit cache)
+							const startTime2 = performance.now();
+							ACAPI.GetCachedIFCProperties(elementGuid).then(function(cppProperties2) {
+								const endTime2 = performance.now();
+								const time2 = endTime2 - startTime2;
+								const uiProperties2 = transformCppPropertiesToUI(cppProperties2);
+								
+								resultDiv.innerHTML += `Second call (cache hit): ${uiProperties2.length} properties in ${time2.toFixed(2)}ms<br>`;
+								resultDiv.innerHTML += `Performance improvement: ${((time1 - time2) / time1 * 100).toFixed(1)}% faster<br>`;
+								
+								// Verify same data
+								if (uiProperties.length === uiProperties2.length) {
+									resultDiv.innerHTML += `✅ Data integrity: Both calls returned same number of properties<br>`;
+								} else {
+									resultDiv.innerHTML += `⚠️ Data mismatch: Different property counts (${uiProperties.length} vs ${uiProperties2.length})<br>`;
+								}
+								
+								// Update UI with cached data
+								currentProperties = uiProperties2;
+								const groups = groupProperties(currentProperties);
+								renderPropertyGroups(groups);
+								updateElementSummary(elementGuid, elem[1], elem[2]);
+								
+								// Update cache stats
+								getCacheStats();
+								
+							}).catch(function(error) {
+								resultDiv.innerHTML += `❌ Error on second call: ${error}<br>`;
+							});
+						}).catch(function(error) {
+							resultDiv.innerHTML += `❌ Error on first call: ${error}<br>`;
+						});
+					} else {
+						resultDiv.innerHTML += '❌ ACAPI.GetCachedIFCProperties function not available.<br>';
+						resultDiv.innerHTML += 'Make sure the plugin is rebuilt with cache functions.<br>';
+					}
+				});
+			} else {
+				resultDiv.innerHTML += '❌ ACAPI not available (testing outside Archicad?).<br>';
+			}
+		}
+		
+		function testCachedPropertiesWithRefresh() {
+			const resultDiv = document.getElementById('performance-test-result');
+			resultDiv.innerHTML = 'Testing cached properties with forced refresh...<br>';
+			
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
+				ACAPI.GetSelectedElements().then(function(elemInfos) {
+					if (!elemInfos || elemInfos.length === 0) {
+						resultDiv.innerHTML += '❌ No element selected.<br>';
+						return;
+					}
+					
+					const elem = elemInfos[0];
+					const elementGuid = elem[0];
+					
+					if (typeof ACAPI.GetCachedIFCPropertiesWithRefresh === 'function') {
+						const startTime = performance.now();
+						ACAPI.GetCachedIFCPropertiesWithRefresh(elementGuid).then(function(cppProperties) {
+							const endTime = performance.now();
+							const time = endTime - startTime;
+							const uiProperties = transformCppPropertiesToUI(cppProperties);
+							
+							resultDiv.innerHTML += `Forced refresh: ${uiProperties.length} properties in ${time.toFixed(2)}ms<br>`;
+							resultDiv.innerHTML += `✅ Cache was cleared and fresh data loaded<br>`;
+							
+							// Update UI
+							currentProperties = uiProperties;
+							const groups = groupProperties(currentProperties);
+							renderPropertyGroups(groups);
+							updateElementSummary(elementGuid, elem[1], elem[2]);
+							
+							// Update cache stats
+							getCacheStats();
+							
+						}).catch(function(error) {
+							resultDiv.innerHTML += `❌ Error: ${error}<br>`;
+						});
+					} else {
+						resultDiv.innerHTML += '❌ ACAPI.GetCachedIFCPropertiesWithRefresh not available.<br>';
+					}
+				});
+			} else {
+				resultDiv.innerHTML += '❌ ACAPI not available.<br>';
+			}
+		}
+		
+		function clearCache() {
+			const resultDiv = document.getElementById('performance-test-result');
+			resultDiv.innerHTML = 'Clearing cache...<br>';
+			
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.ClearIFCPropertyCache === 'function') {
+				ACAPI.ClearIFCPropertyCache().then(function(result) {
+					resultDiv.innerHTML += `✅ Cache cleared successfully<br>`;
+					getCacheStats();
+				}).catch(function(error) {
+					resultDiv.innerHTML += `❌ Error clearing cache: ${error}<br>`;
+				});
+			} else {
+				resultDiv.innerHTML += '❌ ACAPI.ClearIFCPropertyCache not available.<br>';
+			}
+		}
+		
+		function getCacheStats() {
+			const statsDiv = document.getElementById('cache-stats-result');
+			statsDiv.innerHTML = 'Loading cache statistics...<br>';
+			
+			if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetIFCPropertyCacheSize === 'function') {
+				// Get cache size
+				ACAPI.GetIFCPropertyCacheSize().then(function(cacheSize) {
+					statsDiv.innerHTML = `Cache size: ${cacheSize} elements<br>`;
+					
+					// In a real implementation, we might have more detailed stats
+					// For now, just show the size
+					if (cacheSize > 0) {
+						statsDiv.innerHTML += `✅ Cache is active with ${cacheSize} cached element(s)<br>`;
+					} else {
+						statsDiv.innerHTML += `ℹ️ Cache is empty<br>`;
+					}
+				}).catch(function(error) {
+					statsDiv.innerHTML = `❌ Error getting cache stats: ${error}<br>`;
+				});
+			} else {
+				statsDiv.innerHTML = '❌ Cache statistics not available.<br>';
+			}
+		}
+		
+		// Add test functions to the test suite
+		window.testIFCProperties.testCompleteIFCProperties = testCompleteIFCProperties;
+		window.testIFCProperties.comparePropertyCounts = comparePropertyCounts;
+		window.testIFCProperties.testCachedProperties = testCachedProperties;
+		window.testIFCProperties.testCachedPropertiesWithRefresh = testCachedPropertiesWithRefresh;
+		window.testIFCProperties.clearCache = clearCache;
+		window.testIFCProperties.getCacheStats = getCacheStats;
+		
+		// Update runAllTests to include new tests
+		const originalRunAllTests = window.testIFCProperties.runAllTests;
+		window.testIFCProperties.runAllTests = function() {
+			console.log("=== Running IFC Property Reader Test Suite ===");
+			this.validateData();
+			this.testSingleElement();
+			this.testMultipleElements();
+			this.testEmptySelection();
+			this.testSearch("test");
+			this.testRealCppProperties();
+			this.testErrorHandling();
+			this.testIFCTypeRetrieval();
+			this.testChineseTagSupport();
+			this.testVersionDisplay();
+			this.testLazyLoading();
+			this.testCompleteIFCProperties();
+			this.comparePropertyCounts();
+			this.getCacheStats();
+			this.testCachedProperties();
+			console.log("=== All tests completed ===");
+		};
+	</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the Geometry Test Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_GeometryTest
+}
+
+
+'STR#' 32000 "Add-on Info strings" {
+/* [  1] */		"Geometry Test"
+/* [  2] */		"API Test Add-On"
+}
+
+'STR#' 32500 "Menu strings" {
+/* [   ] */		"Test"
+/* [   ] */		"Geometry Functions"
+/* [  1] */			"Rotate Lines (place a rectangle)"
+}
+
+'STR#' 32520 "Prompt strings" {
+/* [   ] */		"Test"
+/* [   ] */		"Geometry Functions"
+/* [  1] */			"Rotate Lines (place a rectangle)"
+}

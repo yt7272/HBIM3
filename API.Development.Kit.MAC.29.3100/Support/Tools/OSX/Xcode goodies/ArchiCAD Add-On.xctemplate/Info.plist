@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>___VARIABLE_productName:RFC1034Identifier___</string>
+	<key>CFBundleIdentifier</key>
+	<string>___VARIABLE_bundleIdentifierPrefix:bundleIdentifier___.___VARIABLE_productName:bundleIdentifier___</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleGetInfoString</key>
+	<string>___PROJECTNAME___ version 29, Copyright © ___YEAR___ by ___VARIABLE_organizationName___.  All rights reserved.</string><!--SUA_UpdAPIVers_PrevToNextVersionNumber_DONOTDELETETHISCOMMENT-->
+	<key>LSRequiresCarbon</key>
+	<true/>
+	<key>CFBundlePackageType</key>
+	<string>.APX</string>
+	<key>CFBundleSignature</key>
+	<string>GSAP</string>
+	<key>CFBundleIconFile</key>
+	<string>ArchiCADPlugin.icns</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleShortVersionString</key>
+	<string>___PROJECTNAME___ version 29</string><!--SUA_UpdAPIVers_PrevToNextVersionNumber_DONOTDELETETHISCOMMENT-->
+</dict>
+</plist>

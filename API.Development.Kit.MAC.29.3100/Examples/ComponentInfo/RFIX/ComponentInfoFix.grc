@@ -1,0 +1,47 @@
+#include "MDIDs_APICD.h"
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_ComponentInfo
+}
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"Component Info"
+/* [  2] */		"Add attributes: 构件编号, 照片说明, 照片路径 to elements"
+}
+
+'STR#' 32500 "Menu" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"Component Info"
+/* [  1] */			"为选中构件填写扩展信息（编号 / 照片说明 / 照片）^EL"
+}
+
+'STR#' 32600 "Menu Prompt" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"Component Info"
+/* [  1] */			"为选中构件填写扩展信息（编号 / 照片说明 / 照片）"
+}
+
+'GDLG' 32510  Modal  0  0  400  220  "构件扩展信息" {
+/* [  1] */ Button			  310  188   70   24	LargePlain  "OK"
+/* [  2] */ Button			  230  188   70   24	LargePlain  "Cancel"
+/* [  3] */ LeftText		    10   12   80   20	LargePlain  vCenter  "构件编号:"
+/* [  4] */ TextEdit		    95   10  285   22	LargePlain  255
+/* [  5] */ LeftText		    10   42   80   20	LargePlain  vCenter  "照片说明:"
+/* [  6] */ TextEdit		    95   40  285   22	LargePlain  512
+/* [  7] */ LeftText		    10   72   100  20	LargePlain  vCenter  "照片:"
+/* [  8] */ Button			  95   70  120   24	LargePlain  "选择照片"
+/* [  9] */ LeftText		    10  100  380  18	LargePlain  vCenter  "已选 0 张"
+}
+
+'DLGH' 32510  DLG_ComponentInfo {
+1	""	Button_0
+2	""	Button_1
+3	""	LeftText_0
+4	""	TextEdit_0
+5	""	LeftText_1
+6	""	TextEdit_1
+7	""	LeftText_2
+8	""	Button_2
+9	""	LeftText_3
+}

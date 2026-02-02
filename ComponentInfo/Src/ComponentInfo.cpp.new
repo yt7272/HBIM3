@@ -1,0 +1,79 @@
+
+GSErrCode ComponentInfo::GetComponentIdentifier (API_Guid elemGuid, GS::UniString& outIdentifier)
+{
+	outIdentifier.Clear ();
+	
+	if (elemGuid == APINULLGuid) {
+		return APIERR_BADID;
+	}
+	
+	GS::Array<GS::UniString> identifierParts;
+	
+	// 1. 获取元素类型
+	API_Elem_Head elemHead = {};
+	elemHead.guid = elemGuid;
+	GSErrCode err = ACAPI_Element_GetHeader (&elemHead);
+	if (err == NoError) {
+		GS::HashTable<API_ElemTypeID, GS::UniString> typeNames = {
+			{ API_WallID, "墙" },
+			{ API_ColumnID, "柱" },
+			{ API_BeamID, "梁" },
+			{ API_WindowID, "窗" },
+			{ API_DoorID, "门" },
+			{ API_ObjectID, "物体" },
+			{ API_SlabID, "楼板" },
+			{ API_RoofID, "屋顶" },
+			{ API_MeshID, "网格" },
+			{ API_ZoneID, "区域" },
+			{ API_TextID, "文字" },
+			{ API_DimensionID, "尺寸" }
+		};
+		
+		GS::UniString* typeNamePtr = typeNames.Get (elemHead.typeID);
+		if (typeNamePtr != nullptr) {
+			identifierParts.Push (*typeNamePtr);
+		} else {
+			identifierParts.Push ("未知类型");
+		}
+	} else {
+		identifierParts.Push ("未知元素");
+	}
+	
+	// 2. 尝试获取IFC类型（稍后实现）
+	// TODO: 使用IFC API获取IFC类型
+	
+	// 3. 获取分类信息
+	GS::UniString classificationInfo, classificationId;
+	if (GetElementClassificationInfo (elemGuid, classificationInfo, classificationId) == NoError) {
+		if (!classificationInfo.IsEmpty ()) {
+			identifierParts.Push ("分类: " + classificationInfo);
+		}
+		if (!classificationId.IsEmpty ()) {
+			identifierParts.Push ("ID: " + classificationId);
+		}
+	}
+	
+	// 4. 获取构件编号（如果已设置）
+	PropertyDefinitionGuids guids;
+	if (FindPropertyDefinitions (guids) == NoError) {
+		GS::UniString compId;
+		if (GetStringPropertyFromElement (elemGuid, guids.compIdGuid, compId) == NoError && !compId.IsEmpty ()) {
+			identifierParts.Push ("编号: " + compId);
+		}
+	}
+	
+	// 构建最终标识字符串
+	if (identifierParts.IsEmpty ()) {
+		outIdentifier = "未设置标识";
+	} else {
+		// 使用 " | " 分隔各个部分
+		for (UInt32 i = 0; i < identifierParts.GetSize (); i++) {
+			if (i > 0) {
+				outIdentifier += " | ";
+			}
+			outIdentifier += identifierParts[i];
+		}
+	}
+	
+	return NoError;
+}

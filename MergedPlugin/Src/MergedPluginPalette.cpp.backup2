@@ -1,0 +1,1145 @@
+#include "MergedPluginPalette.hpp"
+#include "MergedPlugin.hpp"
+#include "APICommon.h"
+#include "ApplicationLauncher.hpp"
+#include "BM.hpp"
+#include "DGUtility.hpp"
+#include "DGDialog.hpp"
+#include "GXImage.hpp"
+#include "NativeImage.hpp"
+#include "DGFileDialog.hpp"
+#include "FileTypeManager.hpp"
+#include "MergedPluginIFCPropertiesDialog.hpp"
+#include "PropertyUtils.hpp"
+
+#include "FileSystem.hpp"
+
+static GS::UniString LoadHtmlFromResource ()
+{
+	GS::UniString resourceData;
+	GSHandle data = RSLoadResource ('DATA', ACAPI_GetOwnResModule (), 100);
+	GSSize handleSize = BMhGetSize (data);
+	if (data != nullptr) {
+		resourceData.Append (*data, handleSize);
+		BMhKill (&data);
+	}
+	return resourceData;
+}
+
+static GS::UniString GetStringFromJavaScriptVariable (GS::Ref<JS::Base> jsVariable)
+{
+	GS::Ref<JS::Value> jsValue = GS::DynamicCast<JS::Value> (jsVariable);
+	if (DBVERIFY (jsValue != nullptr && jsValue->GetType () == JS::Value::STRING))
+		return jsValue->GetString ();
+
+	return GS::EmptyUniString;
+}
+
+template<class Type>
+static GS::Ref<JS::Base> ConvertToJavaScriptVariable (const Type& cppVariable)
+{
+	return new JS::Value (cppVariable);
+}
+
+template<>
+GS::Ref<JS::Base> ConvertToJavaScriptVariable (const MergedPluginPalette::ElementInfo& elemInfo)
+{
+	GS::Ref<JS::Array> js = new JS::Array ();
+	js->AddItem (ConvertToJavaScriptVariable (elemInfo.guidStr));
+	js->AddItem (ConvertToJavaScriptVariable (elemInfo.typeName));
+	js->AddItem (ConvertToJavaScriptVariable (elemInfo.elemID));
+	return js;
+}
+
+template<>
+GS::Ref<JS::Base> ConvertToJavaScriptVariable (const PropertyUtils::PropertyInfo& propInfo)
+{
+	GS::Ref<JS::Array> js = new JS::Array ();
+	js->AddItem (ConvertToJavaScriptVariable (propInfo.propertySetName));
+	js->AddItem (ConvertToJavaScriptVariable (propInfo.propertyName));
+	js->AddItem (ConvertToJavaScriptVariable (propInfo.propertyValue));
+	js->AddItem (ConvertToJavaScriptVariable (propInfo.propertyType));
+	js->AddItem (ConvertToJavaScriptVariable (propInfo.unit));
+	js->AddItem (ConvertToJavaScriptVariable (propInfo.isValid));
+	return js;
+}
+
+template<class Type>
+static GS::Ref<JS::Base> ConvertToJavaScriptVariable (const GS::Array<Type>& cppArray)
+{
+	GS::Ref<JS::Array> newArray = new JS::Array ();
+	for (const Type& item : cppArray) {
+		newArray->AddItem (ConvertToJavaScriptVariable (item));
+	}
+	return newArray;
+}
+
+static const GS::Guid s_paletteGuid ("{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}");
+static GS::Ref<MergedPluginPalette> s_instance;
+
+static GSErrCode NotificationHandler (API_NotifyEventID notifID, Int32)
+{
+	if (notifID == APINotify_Quit)
+		MergedPluginPalette::DestroyInstance ();
+	return NoError;
+}
+
+MergedPluginPalette::MergedPluginPalette ()
+	: DG::Palette (ACAPI_GetOwnResModule (), PaletteResId, ACAPI_GetOwnResModule (), s_paletteGuid)
+	// DG controls removed - only browser remains for HTML interface
+	, browser (GetReference (), BrowserId)
+	, currentElemGuid (APINULLGuid)
+	, currentPhotoIndex (0)
+	, isEditMode (false)
+{
+	ACAPI_WriteReport ("MergedPluginPalette构造函数: 开始初始化，PaletteResId=%d", false, PaletteResId);
+	ACAPI_ProjectOperation_CatchProjectEvent (APINotify_Quit, NotificationHandler);
+	Attach (*this);
+	// Temporarily disabled: controls may not exist
+	// btnViewPhotos.Attach (*this);
+	// btnPrevPhoto.Attach (*this);
+	// btnDeletePhoto.Attach (*this);
+	// btnNextPhoto.Attach (*this);
+	// btnEditInfo.Attach (*this);
+	// btnSelectPhotos.Attach (*this);
+	// DG controls removed - all UI handled by HTML/JavaScript
+	BeginEventProcessing ();
+	ACAPI_WriteReport ("MergedPluginPalette构造函数: 初始化完成，BrowserId=%d", false, BrowserId);
+	
+	// Load HTML interface first, then initialize JavaScript bridge
+	GS::UniString htmlContent = LoadHtmlFromResource ();
+	ACAPI_WriteReport ("MergedPluginPalette: 加载HTML资源，大小=%d 字节", false, htmlContent.GetLength ());
+	if (htmlContent.IsEmpty ()) {
+		ACAPI_WriteReport ("错误: HTML资源为空!", true);
+	} else {
+		browser.LoadHTML (htmlContent);
+		ACAPI_WriteReport ("MergedPluginPalette: HTML加载完成，初始化JavaScript桥接", false);
+	}
+	InitializeJavaScriptBridge();
+}
+
+MergedPluginPalette::~MergedPluginPalette ()
+{
+	EndEventProcessing ();
+}
+
+GS::Array<MergedPluginPalette::ElementInfo> MergedPluginPalette::GetSelectedElements ()
+{
+	API_SelectionInfo	selectionInfo;
+	GS::Array<API_Neig>	selNeigs;
+	ACAPI_Selection_Get (&selectionInfo, &selNeigs, false, false);
+	BMKillHandle ((GSHandle*)&selectionInfo.marquee.coords);
+
+	GS::Array<MergedPluginPalette::ElementInfo> selectedElements;
+	for (const API_Neig& neig : selNeigs) {
+		API_Elem_Head elemHead {};
+		elemHead.guid = neig.guid;
+		ACAPI_Element_GetHeader (&elemHead);
+
+		ElementInfo elemInfo;
+		elemInfo.guidStr = APIGuidToString (elemHead.guid);
+		ACAPI_Element_GetElemTypeName (elemHead.type, elemInfo.typeName);
+		ACAPI_Element_GetElementInfoString (&elemHead.guid, &elemInfo.elemID);
+		selectedElements.Push (elemInfo);
+	}
+	return selectedElements;
+}
+
+void MergedPluginPalette::InitializeJavaScriptBridge ()
+{
+	ACAPI_WriteReport ("InitializeJavaScriptBridge: 开始初始化JavaScript桥接", false);
+	GS::Ref<JS::Object> jsACAPI = new JS::Object ("ACAPI");
+
+	jsACAPI->AddItem (new JS::Function ("GetSelectedElements", [] (GS::Ref<JS::Base>) {
+		ACAPI_WriteReport ("JavaScript桥接: GetSelectedElements被调用", false);
+		return ConvertToJavaScriptVariable (GetSelectedElements ());
+	}));
+
+	jsACAPI->AddItem (new JS::Function ("GetAllIFCProperties", [] (GS::Ref<JS::Base> param) {
+		ACAPI_WriteReport ("JavaScript桥接: GetAllIFCProperties被调用", false);
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		GS::Array<PropertyUtils::PropertyInfo> properties = PropertyUtils::GetAllIFCPropertiesForElement (elementGuid);
+		ACAPI_WriteReport ("JavaScript桥接: GetAllIFCProperties返回 %d 个属性", false, properties.GetSize ());
+		return ConvertToJavaScriptVariable (properties);
+	}));
+
+	jsACAPI->AddItem (new JS::Function ("GetCachedIFCProperties", [] (GS::Ref<JS::Base> param) {
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		GS::Array<PropertyUtils::PropertyInfo> properties = PropertyUtils::GetCachedIFCPropertiesForElement (elementGuid, false);
+		return ConvertToJavaScriptVariable (properties);
+	}));
+
+	jsACAPI->AddItem (new JS::Function ("GetCachedIFCPropertiesWithRefresh", [] (GS::Ref<JS::Base> param) {
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		GS::Array<PropertyUtils::PropertyInfo> properties = PropertyUtils::GetCachedIFCPropertiesForElement (elementGuid, true);
+		return ConvertToJavaScriptVariable (properties);
+	}));
+
+	jsACAPI->AddItem (new JS::Function ("ClearIFCPropertyCache", [] (GS::Ref<JS::Base>) {
+		PropertyUtils::ClearIFCPropertyCache ();
+		return ConvertToJavaScriptVariable (true);
+	}));
+
+	jsACAPI->AddItem (new JS::Function ("GetIFCPropertyCacheSize", [] (GS::Ref<JS::Base>) {
+		UInt32 cacheSize = PropertyUtils::GetIFCPropertyCacheSize ();
+		return ConvertToJavaScriptVariable (cacheSize);
+	}));
+
+	jsACAPI->AddItem (new JS::Function ("GetPluginVersion", [] (GS::Ref<JS::Base>) {
+		GS::UniString version = PropertyUtils::GetAddOnVersionString ();
+		return new JS::Value (version);
+	}));
+
+	// ComponentInfo JavaScript API - functions added directly to ACAPI object
+	jsACAPI->AddItem (new JS::Function ("ComponentInfo_GetComponentInfo", [] (GS::Ref<JS::Base> param) {
+		ACAPI_WriteReport ("JavaScript桥接: ComponentInfo_GetComponentInfo被调用", false);
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		
+		// Find property definitions
+		ComponentInfo::PropertyDefinitionGuids guids;
+		GSErrCode err = ComponentInfo::FindPropertyDefinitions (guids);
+		if (err != NoError) {
+			ACAPI_WriteReport ("JavaScript桥接: ComponentInfo_GetComponentInfo - 属性定义未找到", false);
+			// Property definitions don't exist yet, return empty object
+			GS::Ref<JS::Object> result = new JS::Object ("ComponentInfoResult");
+			result->AddItem ("componentId", new JS::Value (GS::EmptyUniString));
+			result->AddItem ("photoDescription", new JS::Value (GS::EmptyUniString));
+			result->AddItem ("photoPaths", new JS::Array ());
+			return result;
+		}
+		
+		GS::UniString compId, photoDesc;
+		GS::Array<GS::UniString> photoPaths;
+		
+		ComponentInfo::GetStringPropertyFromElement (elementGuid, guids.compIdGuid, compId);
+		ComponentInfo::GetStringPropertyFromElement (elementGuid, guids.photoDescGuid, photoDesc);
+		ComponentInfo::GetPhotoPathsFromElement (elementGuid, guids.photoPathsGuid, photoPaths);
+		
+		GS::Ref<JS::Object> result = new JS::Object ("ComponentInfoResult");
+		result->AddItem ("componentId", new JS::Value (compId));
+		result->AddItem ("photoDescription", new JS::Value (photoDesc));
+		result->AddItem ("photoPaths", ConvertToJavaScriptVariable (photoPaths));
+		ACAPI_WriteReport ("JavaScript桥接: ComponentInfo_GetComponentInfo返回 componentId='%s', photoDesc='%s', photoPaths=%d", false, compId.ToCStr().Get(), photoDesc.ToCStr().Get(), photoPaths.GetSize());
+		return result;
+	}));
+	
+	jsACAPI->AddItem (new JS::Function ("ComponentInfo_SaveComponentInfo", [] (GS::Ref<JS::Base> param) {
+		// param should be an array: [elementGuid, componentId, photoDescription, photoPaths[]]
+		GS::Ref<JS::Array> params = GS::DynamicCast<JS::Array> (param);
+		if (params == nullptr || params->GetItemArray ().GetSize () < 3) {
+			return new JS::Value (false);
+		}
+		
+		const GS::Array<GS::Ref<JS::Base>>& paramItems = params->GetItemArray ();
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (paramItems[0]);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		
+		GS::UniString componentId = GetStringFromJavaScriptVariable (paramItems[1]);
+		GS::UniString photoDescription = GetStringFromJavaScriptVariable (paramItems[2]);
+		
+		GS::Array<GS::UniString> photoPaths;
+		if (paramItems.GetSize () > 3) {
+			GS::Ref<JS::Array> pathsArray = GS::DynamicCast<JS::Array> (paramItems[3]);
+			if (pathsArray != nullptr) {
+				const GS::Array<GS::Ref<JS::Base>>& pathItems = pathsArray->GetItemArray ();
+				for (UInt32 i = 0; i < pathItems.GetSize (); ++i) {
+					photoPaths.Push (GetStringFromJavaScriptVariable (pathItems[i]));
+				}
+			}
+		}
+		
+		// Ensure property definitions exist
+		ComponentInfo::PropertyDefinitionGuids guids;
+		GSErrCode err = ComponentInfo::EnsurePropertyGroupAndDefinitions (guids);
+		if (err != NoError) {
+			return new JS::Value (false);
+		}
+		
+		// Write properties to element
+		err = ComponentInfo::WritePropertiesToElement (elementGuid, guids, componentId, photoDescription, photoPaths);
+		return new JS::Value (err == NoError);
+	}));
+	
+	jsACAPI->AddItem (new JS::Function ("ComponentInfo_SelectPhotos", [] (GS::Ref<JS::Base> param) {
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		(void)elementGuid; // Not used currently, but part of API signature
+		
+		// Open file picker dialog (similar to DoSelectPhotos in palette)
+		DG::FileDialog dlg (DG::FileDialog::OpenMultiFile);
+		FTM::FileTypeManager mgr ("ComponentInfoPhotos");
+		FTM::FileType typeJpg ("JPEG", "jpg", 0, 0, 0);
+		FTM::FileType typePng ("PNG", "png", 0, 0, 0);
+		FTM::TypeID idJpg = mgr.AddType (typeJpg);
+		FTM::TypeID idPng = mgr.AddType (typePng);
+		dlg.AddFilter (idJpg);
+		dlg.AddFilter (idPng);
+		dlg.SetTitle ("选择照片");
+		
+		GS::Array<GS::UniString> selectedPaths;
+		if (dlg.Invoke ()) {
+			USize n = dlg.GetSelectionCount ();
+			for (UIndex i = 0; i < n; ++i) {
+				GS::UniString path;
+				dlg.GetSelectedFile (i).ToPath (&path);
+				selectedPaths.Push (path);
+			}
+		}
+		
+		return ConvertToJavaScriptVariable (selectedPaths);
+	}));
+	
+	jsACAPI->AddItem (new JS::Function ("ComponentInfo_ViewPhotos", [] (GS::Ref<JS::Base> param) {
+		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
+		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
+		
+		// Get component photo folder
+		IO::Location componentPhotoFolder, projectFolderLoc;
+		GS::UniString projectName;
+		GSErrCode err = ComponentInfo::GetComponentPhotoFolder (elementGuid, componentPhotoFolder, projectFolderLoc, projectName);
+		if (err != NoError) {
+			return new JS::Value (false);
+		}
+		
+		// Convert location to path string
+		GS::UniString folderPath;
+		if (componentPhotoFolder.ToPath (&folderPath) != NoError) {
+			return new JS::Value (false);
+		}
+		
+		// Open folder in system explorer
+		IO::Location openCmd;
+#if defined (GS_MAC)
+		openCmd = IO::Location ("/usr/bin/open");
+#elif defined (GS_WIN)
+		openCmd = IO::Location ("C:\\Windows\\explorer.exe");
+#endif
+		
+		GS::Array<GS::UniString> argv;
+		argv.Push (folderPath);
+		
+		err = IO::Process::ApplicationLauncher::Instance ().Launch (openCmd, argv);
+		return new JS::Value (err == NoError);
+	}));
+
+	browser.RegisterAsynchJSObject (jsACAPI);
+	ACAPI_WriteReport ("InitializeJavaScriptBridge: JavaScript桥接注册完成", false);
+}
+
+bool MergedPluginPalette::HasInstance ()
+{
+	return s_instance != nullptr;
+}
+
+void MergedPluginPalette::CreateInstance ()
+{
+	if (s_instance == nullptr) {
+		s_instance = new MergedPluginPalette ();
+		ACAPI_KeepInMemory (true);
+	}
+}
+
+MergedPluginPalette& MergedPluginPalette::GetInstance ()
+{
+	return *s_instance;
+}
+
+void MergedPluginPalette::DestroyInstance ()
+{
+	s_instance = nullptr;
+}
+
+void MergedPluginPalette::Show ()
+{
+	DG::Palette::Show ();
+	SetMenuItemCheckedState (true);
+}
+
+void MergedPluginPalette::Hide ()
+{
+	DG::Palette::Hide ();
+	SetMenuItemCheckedState (false);
+}
+
+void MergedPluginPalette::UpdateFromSelection ()
+{
+	RefreshContent ();
+}
+
+bool MergedPluginPalette::IsInEditMode ()
+{
+	return HasInstance () && GetInstance ().isEditMode;
+}
+
+void MergedPluginPalette::RefreshContent ()
+{
+	ACAPI_WriteReport ("RefreshContent: 开始刷新内容，isEditMode=%s", false, isEditMode ? "true" : "false");
+	if (isEditMode) return;
+
+	// textComponentIdentifier.SetText ("未选择构件"); // DG control removed - HTML interface
+	// textClassification.SetText ("分类: —"); // DG control removed - HTML interface
+	editCompId.SetText ("");
+	editPhotoDesc.SetText ("");
+	textPhotoPaths.SetText ("—");
+	currentPhotoRelPaths.Clear ();
+	deletedPhotoRelPaths.Clear ();
+	currentElemGuid = APINULLGuid;
+	currentPhotoIndex = 0;
+	btnViewPhotos.Disable ();
+	pictureItem.SetPicture (DG::Picture ());
+	btnPrevPhoto.Hide ();
+	btnDeletePhoto.Hide ();
+	btnNextPhoto.Hide ();
+	textPhotoIndex.Hide ();
+
+	// 先获取选中的构件
+	API_SelectionInfo selInfo = {};
+	GS::Array<API_Neig> selNeigs;
+	GSErrCode err = ACAPI_Selection_Get (&selInfo, &selNeigs, false);
+	if (err != NoError && err != APIERR_NOSEL) { 
+		ACAPI_WriteReport ("RefreshContent: ACAPI_Selection_Get失败: %s", true, ErrID_To_Name(err)); 
+		return; 
+	}
+	BMKillHandle ((GSHandle*) &selInfo.marquee.coords);
+	
+	ACAPI_WriteReport ("RefreshContent: 获取到%d个选中构件", false, selNeigs.GetSize());
+	// 多选处理：显示选择数量
+	if (selNeigs.GetSize () > 1) {
+		GS::UniString multiSelectText;
+		multiSelectText += "已选择";
+		multiSelectText += GS::ValueToUniString (selNeigs.GetSize ());
+		multiSelectText += "个构件";
+		textComponentIdentifier.SetText (multiSelectText);
+		return;
+	}
+	
+	// 无选择
+	if (selNeigs.IsEmpty ()) {
+		return;
+	}
+
+	API_Guid first = selNeigs[0].guid;
+	currentElemGuid = first;
+	
+	// 获取并显示构件标识
+	GS::UniString componentIdentifier;
+	if (ComponentInfo::GetComponentIdentifier (first, componentIdentifier) == NoError) {
+		textComponentIdentifier.SetText (componentIdentifier);
+	}
+
+	// 获取并显示分类信息
+	GS::UniString classificationInfo, classificationId;
+	if (ComponentInfo::GetElementClassificationInfo (first, classificationInfo, classificationId) == NoError) {
+		GS::UniString displayText = "分类: ";
+		displayText += classificationInfo;
+		displayText += " (ID: ";
+		displayText += classificationId;
+		displayText += ")";
+		textClassification.SetText (displayText);
+	}
+
+	// 尝试查找已存在的属性定义（不创建新的）
+	ComponentInfo::PropertyDefinitionGuids guids;
+	err = ComponentInfo::FindPropertyDefinitions (guids);
+	if (err != NoError) {
+		return; // 属性组尚未创建，等用户第一次保存时创建
+	}
+
+	GS::UniString compId, photoDesc;
+	if (ComponentInfo::GetStringPropertyFromElement (first, guids.compIdGuid, compId) == NoError)
+		editCompId.SetText (compId);
+	if (ComponentInfo::GetStringPropertyFromElement (first, guids.photoDescGuid, photoDesc) == NoError)
+		editPhotoDesc.SetText (photoDesc);
+
+	GSErrCode pathsErr = ComponentInfo::GetPhotoPathsFromElement (first, guids.photoPathsGuid, currentPhotoRelPaths);
+	if (pathsErr == NoError && !currentPhotoRelPaths.IsEmpty ()) {
+		// 只显示文件夹路径（从第一张照片路径提取）
+		GS::UniString firstPath = currentPhotoRelPaths[0];
+		GS::UniString folderPath = firstPath;
+		UIndex lastSlash = firstPath.FindLast ('/');
+		if (lastSlash != MaxUIndex) {
+			folderPath = firstPath.GetSubstring (0, lastSlash);
+		}
+		GS::UniString pathsText;
+		pathsText += folderPath;
+		pathsText += "\n(共 ";
+		pathsText += GS::ValueToUniString (currentPhotoRelPaths.GetSize ());
+		pathsText += " 张)";
+		textPhotoPaths.SetText (pathsText);
+		btnViewPhotos.Enable ();
+
+		// 显示第一张图片
+		currentPhotoIndex = 0;
+		ShowPhotoAtIndex (currentPhotoIndex);
+		UpdatePhotoIndexText ();
+
+		// 如果有多张照片，显示翻页按钮
+		if (currentPhotoRelPaths.GetSize () > 1) {
+			// btnPrevPhoto.Show ();
+			// btnNextPhoto.Show ();
+			// textPhotoIndex.Show ();
+			btnNextPhoto.Enable ();
+			btnPrevPhoto.Disable (); // 第一张时禁用上一张
+		} else if (currentPhotoRelPaths.GetSize () == 1) {
+			// 只有一张照片时也显示索引
+			// textPhotoIndex.Show ();
+		}
+	} else {
+		textPhotoPaths.SetText ("—");
+	}
+}
+
+void MergedPluginPalette::ShowAllPhotos ()
+{
+	// 此函数已被 ShowPhotoAtIndex 替代，保留以兼容
+	if (!currentPhotoRelPaths.IsEmpty ()) {
+		ShowPhotoAtIndex (0);
+	}
+}
+
+void MergedPluginPalette::ShowPhotoAtIndex (UInt32 index)
+{
+	ACAPI_WriteReport ("ShowPhotoAtIndex: 开始显示照片，index=%u, 总照片数=%u", false, index, currentPhotoRelPaths.GetSize());
+	pictureItem.SetPicture (DG::Picture ());
+
+	if (index >= currentPhotoRelPaths.GetSize ()) {
+		return;
+	}
+
+	IO::Location projectFolderLoc;
+	IO::Location photoFolderLoc;
+	GS::UniString projectName;
+	GSErrCode folderErr = ComponentInfo::GetProjectPhotoFolder (photoFolderLoc, projectFolderLoc, projectName);
+	if (folderErr != NoError) {
+		if (folderErr == APIERR_NOPLAN) {
+			ACAPI_WriteReport ("项目未保存，无法显示照片。请先保存项目。", false);
+		} else {
+			ACAPI_WriteReport ("获取项目照片文件夹失败，错误代码: %s", false, ErrID_To_Name (folderErr));
+		}
+		return;
+	}
+
+	// 从项目文件夹开始，逐步追加相对路径的各个组件
+	IO::Location imgLoc = projectFolderLoc;
+	GS::UniString relPath = currentPhotoRelPaths[index];
+	ACAPI_WriteReport ("ShowPhotoAtIndex: 相对路径=\"%s\"", false, relPath.ToCStr().Get());
+	
+	// 解析相对路径并逐个追加
+	GS::Array<GS::UniString> pathParts;
+	UIndex start = 0;
+	for (UIndex i = 0; i <= relPath.GetLength (); ++i) {
+		if (i == relPath.GetLength () || relPath[i] == '/' || relPath[i] == '\\') {
+			if (i > start) {
+				pathParts.Push (relPath.GetSubstring (start, i - start));
+			}
+			start = i + 1;
+		}
+	}
+	
+	for (UInt32 p = 0; p < pathParts.GetSize (); ++p) {
+		if (imgLoc.AppendToLocal (IO::Name (pathParts[p])) != NoError) {
+			return;
+	ACAPI_WriteReport ("ShowPhotoAtIndex: 路径解析完成，共%d个部分，完整路径=%s", false, pathParts.GetSize(), imgLoc.ToDisplayText().ToCStr().Get());
+		}
+	}
+
+//	// 检查文件是否存在
+//	if (!IO::fileSystem.IsFile (imgLoc)) {
+//		ACAPI_WriteReport ("照片文件不存在: %s", false, imgLoc.ToDisplayText ().ToCStr ().Get ());
+//		return;
+//	}
+//	
+//	// 检查文件大小
+//	GS::UInt64 fileSize = 0;
+//	if (IO::fileSystem.GetFileSize (imgLoc, &fileSize) == NoError && fileSize == 0) {
+//		ACAPI_WriteReport ("照片文件为空: %s", false, imgLoc.ToDisplayText ().ToCStr ().Get ());
+//		return;
+//	}
+	
+	ACAPI_WriteReport ("加载照片文件: %s (大小: %llu 字节)", false, 
+		imgLoc.ToDisplayText ().ToCStr ().Get (), 0);
+	
+	GX::Image img { imgLoc };
+	if (img.IsEmpty ()) {
+		ACAPI_WriteReport ("GX::Image加载失败，文件可能不是有效图片格式: %s", false, 
+			imgLoc.ToDisplayText ().ToCStr ().Get ());
+		return;
+	}
+
+	UInt32 imgW = img.GetWidth ();
+	UInt32 imgH = img.GetHeight ();
+	short ctrlW = pictureItem.GetWidth ();
+	short ctrlH = pictureItem.GetHeight ();
+
+	// 调试：记录控件尺寸
+	ACAPI_WriteReport ("ShowPhotoAtIndex: 图片尺寸=%dx%d, 控件尺寸=%dx%d", false, imgW, imgH, ctrlW, ctrlH);
+
+	if (imgW == 0 || imgH == 0) {
+		return;
+	}
+
+	// 如果控件尺寸无效，使用默认尺寸（与.grc文件中的320x200匹配）
+	if (ctrlW <= 0) {
+		ACAPI_WriteReport ("警告: pictureItem.GetWidth() 返回 %d, 使用默认值 320", false, ctrlW);
+		ctrlW = 320;
+	}
+	if (ctrlH <= 0) {
+		ACAPI_WriteReport ("警告: pictureItem.GetHeight() 返回 %d, 使用默认值 200", false, ctrlH);
+		ctrlH = 200;
+	}
+
+	// 始终按控件尺寸缩放，保持宽高比
+	double scaleW = (double) ctrlW / (double) imgW;
+	double scaleH = (double) ctrlH / (double) imgH;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	UInt32 newW = (UInt32) (imgW * scale);
+	UInt32 newH = (UInt32) (imgH * scale);
+	if (newW < 1) newW = 1;
+	if (newH < 1) newH = 1;
+
+	NewDisplay::NativeImage nativeImg = img.ToNativeImage (1.0, false);
+	NewDisplay::NativeImage resized = nativeImg.Resize (newW, newH);
+	GX::Image scaledImg (resized);
+	void* dgData = scaledImg.ToDGPicture ();
+	if (dgData != nullptr) {
+		pictureItem.SetPicture (DG::Picture (dgData));
+	}
+}
+
+void MergedPluginPalette::UpdatePhotoIndexText ()
+{
+	if (currentPhotoRelPaths.IsEmpty ()) {
+		textPhotoIndex.SetText ("");
+		return;
+	}
+	GS::UniString t;
+	t += GS::ValueToUniString (currentPhotoIndex + 1);
+	t += " / ";
+	t += GS::ValueToUniString (currentPhotoRelPaths.GetSize ());
+	textPhotoIndex.SetText (t);
+}
+
+void MergedPluginPalette::DoPrevPhoto ()
+{
+	if (currentPhotoRelPaths.IsEmpty () || currentPhotoIndex == 0) return;
+	currentPhotoIndex--;
+	ShowPhotoAtIndex (currentPhotoIndex);
+	UpdatePhotoIndexText ();
+
+	btnNextPhoto.Enable ();
+	if (currentPhotoIndex == 0) {
+		btnPrevPhoto.Disable ();
+	}
+}
+
+void MergedPluginPalette::DoNextPhoto ()
+{
+	if (currentPhotoRelPaths.IsEmpty () || currentPhotoIndex + 1 >= currentPhotoRelPaths.GetSize ()) return;
+	currentPhotoIndex++;
+	ShowPhotoAtIndex (currentPhotoIndex);
+	UpdatePhotoIndexText ();
+
+	btnPrevPhoto.Enable ();
+	if (currentPhotoIndex + 1 >= currentPhotoRelPaths.GetSize ()) {
+		btnNextPhoto.Disable ();
+	}
+}
+
+void MergedPluginPalette::DoDeletePhoto ()
+{
+	if (!isEditMode || currentPhotoRelPaths.IsEmpty ()) return;
+	
+	// 将当前照片路径添加到待删除列表
+	deletedPhotoRelPaths.Push (currentPhotoRelPaths[currentPhotoIndex]);
+	
+	// 从当前列表中移除
+	currentPhotoRelPaths.Delete (currentPhotoIndex);
+	
+	if (currentPhotoRelPaths.IsEmpty ()) {
+		// 没有照片了
+		pictureItem.SetPicture (DG::Picture ());
+		textPhotoPaths.SetText ("—");
+		btnDeletePhoto.Hide ();
+		btnPrevPhoto.Hide ();
+		btnNextPhoto.Hide ();
+		textPhotoIndex.Hide ();
+		btnViewPhotos.Disable ();
+	} else {
+		// 调整索引
+		if (currentPhotoIndex >= currentPhotoRelPaths.GetSize ()) {
+			currentPhotoIndex = (UInt32) currentPhotoRelPaths.GetSize () - 1;
+		}
+		ShowPhotoAtIndex (currentPhotoIndex);
+		UpdatePhotoIndexText ();
+		
+		// 更新文件夹路径显示
+		GS::UniString firstPath = currentPhotoRelPaths[0];
+		GS::UniString folderPath = firstPath;
+		UIndex lastSlash = firstPath.FindLast ('/');
+		if (lastSlash != MaxUIndex) {
+			folderPath = firstPath.GetSubstring (0, lastSlash);
+		}
+		GS::UniString pathsText;
+		pathsText += folderPath;
+		pathsText += "\n(共 ";
+		pathsText += GS::ValueToUniString (currentPhotoRelPaths.GetSize ());
+		pathsText += " 张)";
+		textPhotoPaths.SetText (pathsText);
+		
+		// 更新按钮状态
+		if (currentPhotoRelPaths.GetSize () <= 1) {
+			btnPrevPhoto.Hide ();
+			btnNextPhoto.Hide ();
+		} else {
+			btnPrevPhoto.Enable ();
+			btnNextPhoto.Enable ();
+			if (currentPhotoIndex == 0) btnPrevPhoto.Disable ();
+			if (currentPhotoIndex + 1 >= currentPhotoRelPaths.GetSize ()) btnNextPhoto.Disable ();
+		}
+	}
+}
+
+void MergedPluginPalette::SetMenuItemCheckedState (bool checked)
+{
+	API_MenuItemRef ref = {};
+	GSFlags flags = {};
+	ref.menuResID = 32500;
+	ref.itemIndex = 1;
+	ACAPI_MenuItem_GetMenuItemFlags (&ref, &flags);
+	if (checked) flags |= API_MenuItemChecked;
+	else flags &= (GSFlags) ~API_MenuItemChecked;
+	ACAPI_MenuItem_SetMenuItemFlags (&ref, &flags);
+}
+
+void MergedPluginPalette::DoViewPhotos ()
+{
+	if (currentPhotoRelPaths.IsEmpty ()) return;
+
+	// 显示当前照片缩略图
+	ShowPhotoAtIndex (currentPhotoIndex);
+
+	IO::Location photoFolderLoc, projectFolderLoc;
+	GS::UniString projectName;
+	GSErrCode err = ComponentInfo::GetProjectPhotoFolder (photoFolderLoc, projectFolderLoc, projectName);
+	if (err != NoError) {
+		ACAPI_WriteReport ("请先保存项目后再查看照片。", true);
+		return;
+	}
+
+	GS::UniString projectFolderPath;
+	if (projectFolderLoc.ToPath (&projectFolderPath) != NoError) return;
+
+	// 构建当前照片的完整路径
+	GS::UniString relPath = currentPhotoRelPaths[currentPhotoIndex];
+	GS::UniString fullPath = projectFolderPath;
+	if (!fullPath.IsEmpty () && fullPath.GetLast () != '/' && fullPath.GetLast () != '\\') fullPath += "/";
+	fullPath += relPath;
+
+	GS::Array<GS::UniString> argv;
+	argv.Push (fullPath);  // 用默认程序打开当前照片
+
+	IO::Location openCmd ("/usr/bin/open");
+	err = IO::Process::ApplicationLauncher::Instance ().Launch (openCmd, argv);
+	if (err != NoError)
+		ACAPI_WriteReport ("打开照片失败: %s", true, ErrID_To_Name (err));
+}
+
+void MergedPluginPalette::PanelCloseRequested (const DG::PanelCloseRequestEvent&, bool* accepted)
+{
+	Hide ();
+	*accepted = true;
+}
+
+// void MergedPluginPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
+// {
+// 	if (ev.GetSource () == &btnViewPhotos)
+// 		DoViewPhotos ();
+// 	else if (ev.GetSource () == &btnPrevPhoto)
+// 		DoPrevPhoto ();
+// 	else if (ev.GetSource () == &btnNextPhoto)
+// 		DoNextPhoto ();
+// 	else if (ev.GetSource () == &btnDeletePhoto)
+// 		DoDeletePhoto ();
+// 	else if (ev.GetSource () == &btnEditInfo)
+// 		EnterEditMode ();
+// 	else if (ev.GetSource () == &btnSelectPhotos)
+// 		DoSelectPhotos ();
+// 	else if (ev.GetSource () == &btnSave)
+// 		ExitEditMode (true);
+// 	else if (ev.GetSource () == &btnCancel)
+// 		ExitEditMode (false);
+// 	else if (ev.GetSource () == &btnViewIFCProperties)
+// 		DoViewIFCProperties ();
+// }
+
+void MergedPluginPalette::UpdateEditModeUI ()
+{
+	if (isEditMode) {
+		btnEditInfo.Hide ();
+		// btnSelectPhotos.Show ();
+		// btnSave.Show ();
+		// btnCancel.Show ();
+		editCompId.Enable ();
+		editPhotoDesc.Enable ();
+		btnViewIFCProperties.Disable (); // 编辑模式下禁用IFC属性按钮
+		// 编辑模式下，如果有照片则显示删除按钮
+		if (!currentPhotoRelPaths.IsEmpty ()) {
+			// btnDeletePhoto.Show ();
+		}
+	} else {
+		// btnEditInfo.Show ();
+		btnSelectPhotos.Hide ();
+		btnSave.Hide ();
+		btnCancel.Hide ();
+		btnDeletePhoto.Hide ();
+		editCompId.Disable ();
+		editPhotoDesc.Disable ();
+		// 非编辑模式下，根据是否有选中构件启用IFC属性按钮
+		if (currentElemGuid != APINULLGuid) {
+			btnViewIFCProperties.Enable ();
+		} else {
+			btnViewIFCProperties.Disable ();
+		}
+	}
+}
+
+void MergedPluginPalette::EnterEditMode ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		ACAPI_WriteReport ("请先选择一个构件。", true);
+		return;
+	}
+	// 保存原始值用于编辑检测 (DG controls removed - will get from JavaScript)
+	originalCompId = GS::EmptyUniString;
+	originalPhotoDesc = GS::EmptyUniString;
+	isEditMode = true;
+	pendingPhotoLocations.Clear ();
+	UpdateEditModeUI ();
+}
+
+void MergedPluginPalette::ExitEditMode (bool save)
+{
+	if (save) {
+		DoSave ();
+	}
+	isEditMode = false;
+	pendingPhotoLocations.Clear ();
+	UpdateEditModeUI ();
+	RefreshContent ();
+}
+
+void MergedPluginPalette::DoSelectPhotos ()
+{
+	DG::FileDialog dlg (DG::FileDialog::OpenMultiFile);
+	FTM::FileTypeManager mgr ("ComponentInfoPhotos");
+	FTM::FileType typeJpg ("JPEG", "jpg", 0, 0, 0);
+	FTM::FileType typePng ("PNG", "png", 0, 0, 0);
+	FTM::TypeID idJpg = mgr.AddType (typeJpg);
+	FTM::TypeID idPng = mgr.AddType (typePng);
+	dlg.AddFilter (idJpg);
+	dlg.AddFilter (idPng);
+	dlg.SetTitle ("选择照片");
+	if (dlg.Invoke ()) {
+		pendingPhotoLocations.Clear ();
+		USize n = dlg.GetSelectionCount ();
+		for (UIndex i = 0; i < n; ++i)
+			pendingPhotoLocations.Push (dlg.GetSelectedFile (i));
+		
+		// 显示选择的照片路径
+		GS::UniString t;
+		t += "已选 ";
+		t += GS::ValueToUniString (pendingPhotoLocations.GetSize ());
+		t += " 张新照片:\n";
+		for (UIndex i = 0; i < pendingPhotoLocations.GetSize (); ++i) {
+			GS::UniString path;
+			pendingPhotoLocations[i].ToPath (&path);
+			t += path;
+			if (i + 1 < pendingPhotoLocations.GetSize ()) {
+				t += "\n";
+			}
+		}
+		textPhotoPaths.SetText (t);
+
+		// 显示第一张待选照片的预览
+		if (!pendingPhotoLocations.IsEmpty ()) {
+			ShowPendingPhotoPreview (0);
+		}
+	}
+}
+
+void MergedPluginPalette::ShowPendingPhotoPreview (UInt32 index)
+{
+	pictureItem.SetPicture (DG::Picture ());
+	if (index >= pendingPhotoLocations.GetSize ()) return;
+
+	GX::Image img { pendingPhotoLocations[index] };
+	if (img.IsEmpty ()) return;
+
+	UInt32 imgW = img.GetWidth ();
+	UInt32 imgH = img.GetHeight ();
+	short ctrlW = pictureItem.GetWidth ();
+	short ctrlH = pictureItem.GetHeight ();
+
+	if (imgW == 0 || imgH == 0 || ctrlW <= 0 || ctrlH <= 0) return;
+
+	double scaleW = (double) ctrlW / (double) imgW;
+	double scaleH = (double) ctrlH / (double) imgH;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	UInt32 newW = (UInt32) (imgW * scale);
+	UInt32 newH = (UInt32) (imgH * scale);
+	if (newW < 1) newW = 1;
+	if (newH < 1) newH = 1;
+
+	NewDisplay::NativeImage nativeImg = img.ToNativeImage (1.0, false);
+	NewDisplay::NativeImage resized = nativeImg.Resize (newW, newH);
+	GX::Image scaledImg (resized);
+	void* dgData = scaledImg.ToDGPicture ();
+	if (dgData != nullptr) {
+		pictureItem.SetPicture (DG::Picture (dgData));
+	}
+
+	// 更新索引文本
+	GS::UniString idxText;
+	idxText += GS::ValueToUniString (index + 1);
+	idxText += " / ";
+	idxText += GS::ValueToUniString (pendingPhotoLocations.GetSize ());
+	textPhotoIndex.SetText (idxText);
+}
+
+bool MergedPluginPalette::HasUnsavedChanges () const
+{
+	if (!isEditMode) {
+		return false;
+	}
+	
+	// 检查构件编号是否修改 (DG controls removed - will check via JavaScript)
+	GS::UniString currentCompId = GS::EmptyUniString; // Was: editCompId.GetText()
+	if (currentCompId != originalCompId) {
+		return true;
+	}
+	
+	// 检查照片说明是否修改 (DG controls removed - will check via JavaScript)
+	GS::UniString currentPhotoDesc = GS::EmptyUniString; // Was: editPhotoDesc.GetText()
+	if (currentPhotoDesc != originalPhotoDesc) {
+		return true;
+	}
+	
+	// 检查是否有待保存的照片
+	if (!pendingPhotoLocations.IsEmpty ()) {
+		return true;
+	}
+	
+	return false;
+}
+
+void MergedPluginPalette::DoSave ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		ACAPI_WriteReport ("请先选择一个构件。", true);
+		return;
+	}
+
+	// DG controls removed - values will come from JavaScript via ComponentInfo_SaveComponentInfo
+	GS::UniString compId = GS::EmptyUniString; // Was: editCompId.GetText()
+	GS::UniString photoDesc = GS::EmptyUniString; // Was: editPhotoDesc.GetText()
+	API_Guid elemGuid = currentElemGuid;
+	GS::Array<IO::Location> photoLocs = pendingPhotoLocations;
+
+	// 第一步：检查属性是否对当前元素可用，如果不可用则删除并重建属性组
+	ComponentInfo::PropertyDefinitionGuids guids;
+	bool needRecreate = false;
+
+	// 先尝试查找现有属性
+	GSErrCode findErr = ComponentInfo::FindPropertyDefinitions (guids);
+	if (findErr == NoError) {
+		// 检查属性是否对当前元素可用
+		bool available = ACAPI_Element_IsPropertyDefinitionAvailable (elemGuid, guids.compIdGuid);
+		if (!available) {
+			needRecreate = true;
+		}
+	}
+
+	if (needRecreate) {
+		// 删除并重建属性组（使其对所有元素类型可用）
+		GSErrCode recreateErr = ACAPI_CallUndoableCommand ("重建属性组",
+			[&] () -> GSErrCode {
+				return ComponentInfo::DeleteAndRecreatePropertyGroup (guids);
+			}
+		);
+		if (recreateErr != NoError) {
+			DG::InformationAlert ("需要手动操作", 
+				"属性组重建失败。\n\n请手动操作：\n1. 打开 选项 → 属性管理器\n2. 删除 \"构件扩展信息\" 属性组\n3. 重新保存", 
+				"确定");
+			return;
+		}
+	} else {
+		// 确保属性存在
+		GSErrCode fixErr = ACAPI_CallUndoableCommand ("确保属性定义",
+			[&] () -> GSErrCode {
+				return ComponentInfo::EnsurePropertyGroupAndDefinitions (guids);
+			}
+		);
+		if (fixErr != NoError) {
+			ACAPI_WriteReport ("确保属性定义失败: %s", true, ErrID_To_Name (fixErr));
+			return;
+		}
+	}
+
+	// 保存当前的照片路径列表（可能已被编辑模式下的删除操作修改）
+	GS::Array<GS::UniString> remainingPhotoPaths = currentPhotoRelPaths;
+
+	// 第二步：在另一个命令中写入属性值
+	GSErrCode cmdErr = ACAPI_CallUndoableCommand ("保存构件信息",
+		[&] () -> GSErrCode {
+			GSErrCode err;
+
+			// 1. 使用编辑后的照片路径列表（已排除删除的照片）
+			GS::Array<GS::UniString> allRelPaths = remainingPhotoPaths;
+
+			// 2. 如果有新照片，复制到构件文件夹
+			GS::Array<GS::UniString> newRelPaths;
+			if (!photoLocs.IsEmpty ()) {
+				UInt32 startIndex = (UInt32) allRelPaths.GetSize ();
+				err = ComponentInfo::CopyPhotosForComponent (elemGuid, photoLocs, newRelPaths, startIndex);
+				if (err != NoError) {
+					ACAPI_WriteReport ("复制照片失败: %s", true, ErrID_To_Name (err));
+					return err;
+				}
+				// 添加新照片路径
+				for (UInt32 i = 0; i < newRelPaths.GetSize (); ++i) {
+					allRelPaths.Push (newRelPaths[i]);
+				}
+			}
+
+			// 3. 写入属性
+			err = ComponentInfo::WritePropertiesToElement (elemGuid, guids, compId, photoDesc, allRelPaths);
+			if (err != NoError) {
+				ACAPI_WriteReport ("保存属性失败: %s", true, ErrID_To_Name (err));
+				return err;
+			}
+			return NoError;
+		}
+	);
+
+	if (cmdErr == NoError) {
+		ACAPI_WriteReport ("构件信息已保存。", false);
+		// 清空待保存的照片
+		pendingPhotoLocations.Clear ();
+		// 刷新显示
+		RefreshContent ();
+	}
+}
+
+GSErrCode MergedPluginPalette::SelectionChangeHandler (const API_Neig*)
+{
+	if (HasInstance () && GetInstance ().IsVisible ()) {
+		MergedPluginPalette& instance = GetInstance ();
+		
+		// 检查是否有未保存的更改
+		if (instance.HasUnsavedChanges ()) {
+			// 获取当前构件标识
+			GS::UniString currentIdentifier;
+			if (instance.currentElemGuid != APINULLGuid) {
+				ComponentInfo::GetComponentIdentifier (instance.currentElemGuid, currentIdentifier);
+			} else {
+				currentIdentifier = "当前构件";
+			}
+			
+			// 构建警告消息
+			GS::UniString warningMessage;
+			warningMessage += "你选择了另一个构件，但你编辑的内容将仍然存储到构件";
+			warningMessage += currentIdentifier;
+			warningMessage += "当中去。";
+			
+			// 显示模态警告对话框
+			DG::InformationAlert ("警告", warningMessage, "确定");
+			
+			// 自动保存当前编辑
+			instance.DoSave ();
+			
+			// 退出编辑模式
+			instance.isEditMode = false;
+			instance.UpdateEditModeUI ();
+		}
+		
+		// 刷新显示新选择的构件
+		instance.RefreshContent ();
+	}
+	return NoError;
+}
+
+GSErrCode MergedPluginPalette::PaletteControlCallBack (Int32, API_PaletteMessageID messageID, GS::IntPtr param)
+{
+	switch (messageID) {
+		case APIPalMsg_OpenPalette:
+			if (!HasInstance ()) CreateInstance ();
+			GetInstance ().Show ();
+			break;
+		case APIPalMsg_ClosePalette:
+			if (HasInstance ()) GetInstance ().Hide ();
+			break;
+		case APIPalMsg_HidePalette_Begin:
+			if (HasInstance () && GetInstance ().IsVisible ()) GetInstance ().Hide ();
+			break;
+		case APIPalMsg_HidePalette_End:
+			if (HasInstance () && !GetInstance ().IsVisible ()) GetInstance ().Show ();
+			break;
+		case APIPalMsg_IsPaletteVisible:
+			*(reinterpret_cast<bool*> (param)) = HasInstance () && GetInstance ().IsVisible ();
+			break;
+		default:
+			break;
+	}
+	return NoError;
+}
+
+Int32 MergedPluginPalette::GetPaletteReferenceId ()
+{
+	return GS::CalculateHashValue (s_paletteGuid);
+}
+
+GSErrCode MergedPluginPalette::RegisterPaletteControlCallBack ()
+{
+	return ACAPI_RegisterModelessWindow (
+		GetPaletteReferenceId (),
+		PaletteControlCallBack,
+		API_PalEnabled_FloorPlan + API_PalEnabled_Section + API_PalEnabled_Elevation +
+		API_PalEnabled_InteriorElevation + API_PalEnabled_3D + API_PalEnabled_Detail +
+		API_PalEnabled_Worksheet + API_PalEnabled_Layout + API_PalEnabled_DocumentFrom3D,
+		GSGuid2APIGuid (s_paletteGuid));
+}
+
+void MergedPluginPalette::DoViewIFCProperties ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		ACAPI_WriteReport ("请先选择一个构件。", true);
+		return;
+	}
+	
+	// 检查是否处于编辑模式
+	if (isEditMode) {
+		ACAPI_WriteReport ("编辑模式下无法查看IFC属性。请先保存或取消编辑。", true);
+		return;
+	}
+	
+	// 获取IFC属性
+	GS::UniString ifcProperties;
+	GSErrCode err = ComponentInfo::GetElementIFCProperties (currentElemGuid, ifcProperties);
+	if (err != NoError) {
+		ACAPI_WriteReport ("获取IFC属性失败: %s", true, ErrID_To_Name (err));
+		return;
+	}
+	
+	// 创建并显示对话框
+	GSResModule resMod = ACAPI_GetOwnResModule ();
+	MergedPluginIFCPropertiesDialog dlg (resMod, 32530, resMod);
+	dlg.SetPropertiesText (ifcProperties);
+	
+	dlg.Invoke (); // 模态对话框，等待用户关闭
+}

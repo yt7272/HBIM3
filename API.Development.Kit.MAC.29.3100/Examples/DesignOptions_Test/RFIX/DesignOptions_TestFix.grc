@@ -1,0 +1,95 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the DesignOptions_Test Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_DesignOptionsTest
+}
+
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"DesignOptions_Test"
+/* [  2] */		"DesignOptions_Test Add-On"
+}
+
+'STR#' 32500 "Menu Description" {
+/* [   ] */		"Test"
+/* [   ] */		"Design Options"
+/* [  1] */			"Dump design option combination of view map items^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  2] */			"Set all design option combination to main model only^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  3] */			"Dump design option combinations^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  4] */			"Dump design option related info for selected elements (property-based)^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  5] */			"Dump design option related info for selected elements^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  6] */			"Add a new phrase to all design options name^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  7] */			"Add a new phrase to all design option sets name^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  8] */			"Create a design option^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [  9] */			"Delete the last design option from the first non-empty set^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 10] */			"Move selected elements to a design option^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 11] */			"Move selected elements to the main model^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 12] */			"Get design option table of a hotlinknode^E3^ES^EE^EI^ET^EM"
+/* [ 13] */			"Get design option table of a hotlink instance^E3^ES^EE^EI^ET^EM"
+/* [ 14] */			"Set design option table of a hotlink^E3^ES^EE^EI^ET^EM"
+/* [ 15] */			"Move the first design option to the end of the last set^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 16] */			"Move the last design option of the first set to the front^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 17] */			"Create a design option set^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 18] */			"Dump design options of the first set^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 19] */			"Dump design options sets^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 20] */			"Dump all design options^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 21] */			"Dump active design options of the first combination^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 22] */			"Dump elements linked to the first design option^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 23] */			"Move first design option set before last^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 24] */			"Set the last design option as default^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 25] */			"Set the main model as default^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 26] */			"Delete the first empty design option set^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 27] */			"Add a new phrase to all design options id^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 28] */			"Create a design option combination^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 29] */			"Delete a design option combination^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 30] */			"Add a new phrase to all design option combinations names^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 31] */			"Activate the first design option of every set in a combination^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 32] */			"Deactivate every design option in a combination^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 33] */			"Duplicate a design option combination^E3^ES^EE^EI^ED^EL^EW^ET^EM"
+/* [ 34] */			"Get visible walls by Design Option settings^E3"
+}
+
+'STR#' 32600 "Menu Prompt Strings" {
+/* [   ] */		"Test"
+/* [   ] */		"Design Options"
+/* [  1] */			"Dump design option combination of view map items"
+/* [  2] */			"Set all design option combination to main model only"
+/* [  3] */			"Dump design option combinations"
+/* [  4] */			"Dump design option related info for selected elements (property-based)"
+/* [  5] */			"Dump design option related info for selected elements"
+/* [  6] */			"Add a new phrase to all Design Options name"
+/* [  7] */			"Add a new phrase to all Design Option sets name"
+/* [  8] */			"Create a design option"
+/* [  9] */			"Delete the last design option from the first non-empty set"
+/* [ 10] */			"Move selected elements to a design option"
+/* [ 11] */			"Move selected elements to the main model"
+/* [ 12] */			"Get design option table of a hotlinknode"
+/* [ 13] */			"Get design option table of a hotlink instance"
+/* [ 14] */			"Set design option table of a hotlink"
+/* [ 15] */			"Move the first design option to the end of the last set"
+/* [ 16] */			"Move the last design option of the first set to the front"
+/* [ 17] */			"Create a design option set"
+/* [ 18] */			"Dump design options of the first set"
+/* [ 19] */			"Dump design options sets"
+/* [ 20] */			"Dump all design options"
+/* [ 21] */			"Dump active design options of the first combination"
+/* [ 22] */			"Dump elements linked to the first design option"
+/* [ 23] */			"Move first design option set before last"
+/* [ 24] */			"Set the last design option as default"
+/* [ 25] */			"Set the main model as default"
+/* [ 26] */			"Delete the first empty design option set"
+/* [ 27] */			"Add a new phrase to all design options id"
+/* [ 28] */			"Create a design option combination"
+/* [ 29] */			"Delete a design option combination"
+/* [ 30] */			"Add a new phrase to all design option combinations names"
+/* [ 31] */			"Activate the first design option of every set in a combination"
+/* [ 32] */			"Deactivate every design option in a combination"
+/* [ 33] */			"Duplicate a design option combination"
+/* [ 34] */			"Get visible walls by Design Option settings"
+}

@@ -1,0 +1,48 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the Opening Test Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_OpeningTest
+}
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"Opening Test"
+/* [  2] */		"API Test Add-on for ACAPI_Opening"
+}
+
+'STR#' 32500 "Opening Functions Descriptions Menu" {
+/* [   ] */		"Test"
+/* [   ] */		"New Opening API"
+/* [  1] */			"Create Opening^E3"
+/* [  2] */			"Create Polygonal Opening^E3"
+/* [  3] */			"Change Opening's parent element^E3"
+/* [  4] */			"Connect Opening to another element^E3"
+/* [  5] */			"Disconnect Opening from another element^E3"
+/* [  6] */			"Select openings connected to an element^E3"
+/* [  7] */			"Select elements connected to an opening^E3"
+/* [  8] */			"Select opening's parent element^E3"
+/* [  9] */			"Modify opening's dimensions from current default^E3"
+/* [ 10] */			"Modify opening's cut symbol from current default^E3"
+/* [ 11] */			"Modify opening's override surfaces from current default^E3"
+/* [ 12] */			"Modify current default opening's cover fill type and foreground pen parameters with placed opening's^E3"
+}
+
+'STR#' 32600 "Opening Functions Prompt Strings" {
+/* [   ] */		"Test"
+/* [   ] */		"New Opening API"
+/* [  1] */		"Places an Opening with the current defaults. With the first click, select the parent element, with the second the location where the opening should be placed."
+/* [  2] */		"Places an Opening with the current defaults, but with a triangular shape. With the first click, select the parent element, with the second the location where the opening should be placed."
+/* [  3] */		"Changes the Opening's parent element. With the first click, select the opening, and with the second, select the new parent."
+/* [  4] */		"Connects the Opening to another element and cuts it. With the first click, select the opening, and with the second, select the element you wish to connect the opening to."
+/* [  5] */		"Disconnects the Opening from another element. With the first click, select the opening, and with the second, select the element you wish to disconnect the opening from."
+/* [  6] */		"Selects all openings that are connected to the clicked element."
+/* [  7] */		"Selects all elements that are connected to the clicked opening."
+/* [  8] */		"Selects the clicked opening's parent element."
+/* [  9] */		"Clicked opening's dimensions will change according to the current default."
+/* [ 10] */		"Clicked opening's cut symbol will change according to the current default."
+/* [ 11] */		"Clicked opening's override surfaces will change according to the current default."
+/* [ 12] */		"Changes the current Opening default's cover fill type and foreground pen parameters with the parameters of the clicked Opening's."
+}

@@ -1,0 +1,24 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the SkeletonDrawing_Test Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_SkeletonDrawingTest
+}
+
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"Skeleton Drawing Test"
+/* [  2] */		"API Test Add-On for Skeleton Drawing"
+}
+
+'STR#' 32500 "Menu strings" {
+/* [   ] */		"Test"
+/* [   ] */		"Skeleton Drawing"
+/* [  1] */		"Create a Skeleton Drawing"
+/* [  2] */		"Create a 3D Document"
+}

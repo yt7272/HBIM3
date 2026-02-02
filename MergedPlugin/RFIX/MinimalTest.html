@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Minimal Bridge Test</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            padding: 20px; 
+            background: white; 
+            color: black;
+        }
+        #status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border: 2px solid gray;
+        }
+        .connected { background: #cfc; border-color: green; }
+        .disconnected { background: #fcc; border-color: red; }
+    </style>
+</head>
+<body>
+    <h1>Minimal JavaScript Bridge Test</h1>
+    <div id="status">Testing...</div>
+    <div id="log"></div>
+    
+    <script>
+        // Simple logging
+        function log(msg) {
+            document.getElementById('log').innerHTML += msg + '<br>';
+            console.log(msg);
+        }
+        
+        // Check if ACAPI is available
+        function checkBridge() {
+            log('Checking ACAPI...');
+            
+            if (typeof ACAPI === 'undefined') {
+                log('❌ ACAPI is undefined');
+                document.getElementById('status').textContent = 'Bridge NOT Connected';
+                document.getElementById('status').className = 'disconnected';
+                return false;
+            }
+            
+            // List functions
+            const funcs = Object.keys(ACAPI).filter(k => typeof ACAPI[k] === 'function');
+            log('✅ ACAPI found with ' + funcs.length + ' functions: ' + funcs.join(', '));
+            
+            document.getElementById('status').textContent = 'Bridge Connected (' + funcs.length + ' functions)';
+            document.getElementById('status').className = 'connected';
+            
+            // Test GetPluginVersion if available
+            if (ACAPI.GetPluginVersion) {
+                ACAPI.GetPluginVersion().then(version => {
+                    log('✅ Plugin version: ' + version);
+                }).catch(err => {
+                    log('❌ GetPluginVersion failed: ' + err);
+                });
+            }
+            
+            return true;
+        }
+        
+        // Try multiple times
+        let attempts = 0;
+        function tryBridge() {
+            attempts++;
+            log('Attempt ' + attempts + '...');
+            
+            if (checkBridge()) {
+                log('✅ Bridge connected successfully');
+            } else if (attempts < 10) {
+                setTimeout(tryBridge, 500);
+            } else {
+                log('❌ Failed after ' + attempts + ' attempts');
+            }
+        }
+        
+        // Start checking
+        log('Page loaded, starting bridge check...');
+        setTimeout(tryBridge, 100);
+    </script>
+</body>
+</html>

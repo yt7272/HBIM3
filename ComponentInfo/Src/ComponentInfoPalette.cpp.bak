@@ -1,0 +1,840 @@
+#include "ComponentInfoPalette.hpp"
+#include "ComponentInfo.hpp"
+#include "APICommon.h"
+#include "ApplicationLauncher.hpp"
+#include "BM.hpp"
+#include "DGUtility.hpp"
+#include "DGDialog.hpp"
+#include "GXImage.hpp"
+#include "NativeImage.hpp"
+#include "DGFileDialog.hpp"
+#include "FileTypeManager.hpp"
+
+#include "FileSystem.hpp"
+	static const GS::Guid s_paletteGuid ("{A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D}");
+	static GS::Ref<ComponentInfoPalette> s_instance;
+
+static GSErrCode NotificationHandler (API_NotifyEventID notifID, Int32)
+{
+	if (notifID == APINotify_Quit)
+		ComponentInfoPalette::DestroyInstance ();
+	return NoError;
+}
+
+ComponentInfoPalette::ComponentInfoPalette ()
+	: DG::Palette (ACAPI_GetOwnResModule (), PaletteResId, ACAPI_GetOwnResModule (), s_paletteGuid)
+	, textComponentIdentifier (GetReference (), TextComponentIdentifierId)
+	, textClassification (GetReference (), TextClassificationId)
+	, editCompId (GetReference (), EditCompIdId)
+	, editPhotoDesc (GetReference (), EditPhotoDescId)
+	, textPhotoPaths (GetReference (), TextPhotoPathId)
+	, btnViewPhotos (GetReference (), BtnViewPhotosId)
+	, pictureItem (GetReference (), PictureItemId)
+	, btnPrevPhoto (GetReference (), BtnPrevPhotoId)
+	, btnDeletePhoto (GetReference (), BtnDeletePhotoId)
+	, textPhotoIndex (GetReference (), TextPhotoIndexId)
+	, btnNextPhoto (GetReference (), BtnNextPhotoId)
+	, btnEditInfo (GetReference (), BtnEditInfoId)
+	, btnSelectPhotos (GetReference (), BtnSelectPhotosId)
+	, btnSave (GetReference (), BtnSaveId)
+	, btnCancel (GetReference (), BtnCancelId)
+	, currentElemGuid (APINULLGuid)
+	, currentPhotoIndex (0)
+	, isEditMode (false)
+{
+	ACAPI_ProjectOperation_CatchProjectEvent (APINotify_Quit, NotificationHandler);
+	Attach (*this);
+	btnViewPhotos.Attach (*this);
+	btnPrevPhoto.Attach (*this);
+	btnDeletePhoto.Attach (*this);
+	btnNextPhoto.Attach (*this);
+	btnEditInfo.Attach (*this);
+	btnSelectPhotos.Attach (*this);
+	btnSave.Attach (*this);
+	btnCancel.Attach (*this);
+	editCompId.Disable ();
+	editPhotoDesc.Disable ();
+	// 初始状态：隐藏编辑模式按钮和翻页/删除按钮
+	btnSelectPhotos.Hide ();
+	btnSave.Hide ();
+	btnCancel.Hide ();
+	btnPrevPhoto.Hide ();
+	btnDeletePhoto.Hide ();
+	btnNextPhoto.Hide ();
+	textPhotoIndex.Hide ();
+	textComponentIdentifier.SetText ("未选择构件");
+	BeginEventProcessing ();
+	UpdateFromSelection ();
+}
+
+ComponentInfoPalette::~ComponentInfoPalette ()
+{
+	EndEventProcessing ();
+}
+
+bool ComponentInfoPalette::HasInstance ()
+{
+	return s_instance != nullptr;
+}
+
+void ComponentInfoPalette::CreateInstance ()
+{
+	if (s_instance == nullptr) {
+		s_instance = new ComponentInfoPalette ();
+		ACAPI_KeepInMemory (true);
+	}
+}
+
+ComponentInfoPalette& ComponentInfoPalette::GetInstance ()
+{
+	return *s_instance;
+}
+
+void ComponentInfoPalette::DestroyInstance ()
+{
+	s_instance = nullptr;
+}
+
+void ComponentInfoPalette::Show ()
+{
+	DG::Palette::Show ();
+	SetMenuItemCheckedState (true);
+}
+
+void ComponentInfoPalette::Hide ()
+{
+	DG::Palette::Hide ();
+	SetMenuItemCheckedState (false);
+}
+
+void ComponentInfoPalette::UpdateFromSelection ()
+{
+	RefreshContent ();
+}
+
+bool ComponentInfoPalette::IsInEditMode ()
+{
+	return HasInstance () && GetInstance ().isEditMode;
+}
+
+void ComponentInfoPalette::RefreshContent ()
+{
+	if (isEditMode) return;
+
+	textComponentIdentifier.SetText ("未选择构件");
+	textClassification.SetText ("分类: —");
+	editCompId.SetText ("");
+	editPhotoDesc.SetText ("");
+	textPhotoPaths.SetText ("—");
+	currentPhotoRelPaths.Clear ();
+	deletedPhotoRelPaths.Clear ();
+	currentElemGuid = APINULLGuid;
+	currentPhotoIndex = 0;
+	btnViewPhotos.Disable ();
+	pictureItem.SetPicture (DG::Picture ());
+	btnPrevPhoto.Hide ();
+	btnDeletePhoto.Hide ();
+	btnNextPhoto.Hide ();
+	textPhotoIndex.Hide ();
+
+	// 先获取选中的构件
+	API_SelectionInfo selInfo = {};
+	GS::Array<API_Neig> selNeigs;
+	GSErrCode err = ACAPI_Selection_Get (&selInfo, &selNeigs, false);
+	BMKillHandle ((GSHandle*) &selInfo.marquee.coords);
+	if (err != NoError) return;
+	
+	// 多选处理：显示选择数量
+	if (selNeigs.GetSize () > 1) {
+		GS::UniString multiSelectText;
+		multiSelectText += "已选择";
+		multiSelectText += GS::ValueToUniString (selNeigs.GetSize ());
+		multiSelectText += "个构件";
+		textComponentIdentifier.SetText (multiSelectText);
+		return;
+	}
+	
+	// 无选择
+	if (selNeigs.IsEmpty ()) {
+		return;
+	}
+
+	API_Guid first = selNeigs[0].guid;
+	currentElemGuid = first;
+	
+	// 获取并显示构件标识
+	GS::UniString componentIdentifier;
+	if (ComponentInfo::GetComponentIdentifier (first, componentIdentifier) == NoError) {
+		textComponentIdentifier.SetText (componentIdentifier);
+	}
+
+	// 获取并显示分类信息
+	GS::UniString classificationInfo, classificationId;
+	if (ComponentInfo::GetElementClassificationInfo (first, classificationInfo, classificationId) == NoError) {
+		GS::UniString displayText = "分类: ";
+		displayText += classificationInfo;
+		displayText += " (ID: ";
+		displayText += classificationId;
+		displayText += ")";
+		textClassification.SetText (displayText);
+	}
+
+	// 尝试查找已存在的属性定义（不创建新的）
+	ComponentInfo::PropertyDefinitionGuids guids;
+	err = ComponentInfo::FindPropertyDefinitions (guids);
+	if (err != NoError) {
+		return; // 属性组尚未创建，等用户第一次保存时创建
+	}
+
+	GS::UniString compId, photoDesc;
+	if (ComponentInfo::GetStringPropertyFromElement (first, guids.compIdGuid, compId) == NoError)
+		editCompId.SetText (compId);
+	if (ComponentInfo::GetStringPropertyFromElement (first, guids.photoDescGuid, photoDesc) == NoError)
+		editPhotoDesc.SetText (photoDesc);
+
+	GSErrCode pathsErr = ComponentInfo::GetPhotoPathsFromElement (first, guids.photoPathsGuid, currentPhotoRelPaths);
+	if (pathsErr == NoError && !currentPhotoRelPaths.IsEmpty ()) {
+		// 只显示文件夹路径（从第一张照片路径提取）
+		GS::UniString firstPath = currentPhotoRelPaths[0];
+		GS::UniString folderPath = firstPath;
+		UIndex lastSlash = firstPath.FindLast ('/');
+		if (lastSlash != MaxUIndex) {
+			folderPath = firstPath.GetSubstring (0, lastSlash);
+		}
+		GS::UniString pathsText;
+		pathsText += folderPath;
+		pathsText += "\n(共 ";
+		pathsText += GS::ValueToUniString (currentPhotoRelPaths.GetSize ());
+		pathsText += " 张)";
+		textPhotoPaths.SetText (pathsText);
+		btnViewPhotos.Enable ();
+
+		// 显示第一张图片
+		currentPhotoIndex = 0;
+		ShowPhotoAtIndex (currentPhotoIndex);
+		UpdatePhotoIndexText ();
+
+		// 如果有多张照片，显示翻页按钮
+		if (currentPhotoRelPaths.GetSize () > 1) {
+			btnPrevPhoto.Show ();
+			btnNextPhoto.Show ();
+			textPhotoIndex.Show ();
+			btnNextPhoto.Enable ();
+			btnPrevPhoto.Disable (); // 第一张时禁用上一张
+		} else if (currentPhotoRelPaths.GetSize () == 1) {
+			// 只有一张照片时也显示索引
+			textPhotoIndex.Show ();
+		}
+	} else {
+		textPhotoPaths.SetText ("—");
+	}
+}
+
+void ComponentInfoPalette::ShowAllPhotos ()
+{
+	// 此函数已被 ShowPhotoAtIndex 替代，保留以兼容
+	if (!currentPhotoRelPaths.IsEmpty ()) {
+		ShowPhotoAtIndex (0);
+	}
+}
+
+void ComponentInfoPalette::ShowPhotoAtIndex (UInt32 index)
+{
+	pictureItem.SetPicture (DG::Picture ());
+
+	if (index >= currentPhotoRelPaths.GetSize ()) {
+		return;
+	}
+
+	IO::Location projectFolderLoc;
+	IO::Location photoFolderLoc;
+	GS::UniString projectName;
+	GSErrCode folderErr = ComponentInfo::GetProjectPhotoFolder (photoFolderLoc, projectFolderLoc, projectName);
+	if (folderErr != NoError) {
+		if (folderErr == APIERR_NOPLAN) {
+			ACAPI_WriteReport ("项目未保存，无法显示照片。请先保存项目。", false);
+		} else {
+			ACAPI_WriteReport ("获取项目照片文件夹失败，错误代码: %s", false, ErrID_To_Name (folderErr));
+		}
+		return;
+	}
+
+	// 从项目文件夹开始，逐步追加相对路径的各个组件
+	IO::Location imgLoc = projectFolderLoc;
+	GS::UniString relPath = currentPhotoRelPaths[index];
+	
+	// 解析相对路径并逐个追加
+	GS::Array<GS::UniString> pathParts;
+	UIndex start = 0;
+	for (UIndex i = 0; i <= relPath.GetLength (); ++i) {
+		if (i == relPath.GetLength () || relPath[i] == '/' || relPath[i] == '\\') {
+			if (i > start) {
+				pathParts.Push (relPath.GetSubstring (start, i - start));
+			}
+			start = i + 1;
+		}
+	}
+	
+	for (UInt32 p = 0; p < pathParts.GetSize (); ++p) {
+		if (imgLoc.AppendToLocal (IO::Name (pathParts[p])) != NoError) {
+			return;
+		}
+	}
+
+	// 检查文件是否存在
+	if (!IO::fileSystem.IsFile (imgLoc)) {
+		ACAPI_WriteReport ("照片文件不存在: %s", false, imgLoc.ToDisplayText ().ToCStr ().Get ());
+		return;
+	}
+	
+	// 检查文件大小
+	GS::UInt64 fileSize = 0;
+	if (IO::fileSystem.GetFileSize (imgLoc, &fileSize) == NoError && fileSize == 0) {
+		ACAPI_WriteReport ("照片文件为空: %s", false, imgLoc.ToDisplayText ().ToCStr ().Get ());
+		return;
+	}
+	
+	ACAPI_WriteReport ("加载照片文件: %s (大小: %llu 字节)", false, 
+		imgLoc.ToDisplayText ().ToCStr ().Get (), fileSize);
+	
+	GX::Image img { imgLoc };
+	if (img.IsEmpty ()) {
+		ACAPI_WriteReport ("GX::Image加载失败，文件可能不是有效图片格式: %s", false, 
+			imgLoc.ToDisplayText ().ToCStr ().Get ());
+		return;
+	}
+
+	UInt32 imgW = img.GetWidth ();
+	UInt32 imgH = img.GetHeight ();
+	short ctrlW = pictureItem.GetWidth ();
+	short ctrlH = pictureItem.GetHeight ();
+
+	// 调试：记录控件尺寸
+	ACAPI_WriteReport ("ShowPhotoAtIndex: 图片尺寸=%dx%d, 控件尺寸=%dx%d", false, imgW, imgH, ctrlW, ctrlH);
+
+	if (imgW == 0 || imgH == 0) {
+		return;
+	}
+
+	// 如果控件尺寸无效，使用默认尺寸（与.grc文件中的320x200匹配）
+	if (ctrlW <= 0) {
+		ACAPI_WriteReport ("警告: pictureItem.GetWidth() 返回 %d, 使用默认值 320", false, ctrlW);
+		ctrlW = 320;
+	}
+	if (ctrlH <= 0) {
+		ACAPI_WriteReport ("警告: pictureItem.GetHeight() 返回 %d, 使用默认值 200", false, ctrlH);
+		ctrlH = 200;
+	}
+
+	// 始终按控件尺寸缩放，保持宽高比
+	double scaleW = (double) ctrlW / (double) imgW;
+	double scaleH = (double) ctrlH / (double) imgH;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	UInt32 newW = (UInt32) (imgW * scale);
+	UInt32 newH = (UInt32) (imgH * scale);
+	if (newW < 1) newW = 1;
+	if (newH < 1) newH = 1;
+
+	NewDisplay::NativeImage nativeImg = img.ToNativeImage (1.0, false);
+	NewDisplay::NativeImage resized = nativeImg.Resize (newW, newH);
+	GX::Image scaledImg (resized);
+	void* dgData = scaledImg.ToDGPicture ();
+	if (dgData != nullptr) {
+		pictureItem.SetPicture (DG::Picture (dgData));
+	}
+}
+
+void ComponentInfoPalette::UpdatePhotoIndexText ()
+{
+	if (currentPhotoRelPaths.IsEmpty ()) {
+		textPhotoIndex.SetText ("");
+		return;
+	}
+	GS::UniString t;
+	t += GS::ValueToUniString (currentPhotoIndex + 1);
+	t += " / ";
+	t += GS::ValueToUniString (currentPhotoRelPaths.GetSize ());
+	textPhotoIndex.SetText (t);
+}
+
+void ComponentInfoPalette::DoPrevPhoto ()
+{
+	if (currentPhotoRelPaths.IsEmpty () || currentPhotoIndex == 0) return;
+	currentPhotoIndex--;
+	ShowPhotoAtIndex (currentPhotoIndex);
+	UpdatePhotoIndexText ();
+
+	btnNextPhoto.Enable ();
+	if (currentPhotoIndex == 0) {
+		btnPrevPhoto.Disable ();
+	}
+}
+
+void ComponentInfoPalette::DoNextPhoto ()
+{
+	if (currentPhotoRelPaths.IsEmpty () || currentPhotoIndex + 1 >= currentPhotoRelPaths.GetSize ()) return;
+	currentPhotoIndex++;
+	ShowPhotoAtIndex (currentPhotoIndex);
+	UpdatePhotoIndexText ();
+
+	btnPrevPhoto.Enable ();
+	if (currentPhotoIndex + 1 >= currentPhotoRelPaths.GetSize ()) {
+		btnNextPhoto.Disable ();
+	}
+}
+
+void ComponentInfoPalette::DoDeletePhoto ()
+{
+	if (!isEditMode || currentPhotoRelPaths.IsEmpty ()) return;
+	
+	// 将当前照片路径添加到待删除列表
+	deletedPhotoRelPaths.Push (currentPhotoRelPaths[currentPhotoIndex]);
+	
+	// 从当前列表中移除
+	currentPhotoRelPaths.Delete (currentPhotoIndex);
+	
+	if (currentPhotoRelPaths.IsEmpty ()) {
+		// 没有照片了
+		pictureItem.SetPicture (DG::Picture ());
+		textPhotoPaths.SetText ("—");
+		btnDeletePhoto.Hide ();
+		btnPrevPhoto.Hide ();
+		btnNextPhoto.Hide ();
+		textPhotoIndex.Hide ();
+		btnViewPhotos.Disable ();
+	} else {
+		// 调整索引
+		if (currentPhotoIndex >= currentPhotoRelPaths.GetSize ()) {
+			currentPhotoIndex = (UInt32) currentPhotoRelPaths.GetSize () - 1;
+		}
+		ShowPhotoAtIndex (currentPhotoIndex);
+		UpdatePhotoIndexText ();
+		
+		// 更新文件夹路径显示
+		GS::UniString firstPath = currentPhotoRelPaths[0];
+		GS::UniString folderPath = firstPath;
+		UIndex lastSlash = firstPath.FindLast ('/');
+		if (lastSlash != MaxUIndex) {
+			folderPath = firstPath.GetSubstring (0, lastSlash);
+		}
+		GS::UniString pathsText;
+		pathsText += folderPath;
+		pathsText += "\n(共 ";
+		pathsText += GS::ValueToUniString (currentPhotoRelPaths.GetSize ());
+		pathsText += " 张)";
+		textPhotoPaths.SetText (pathsText);
+		
+		// 更新按钮状态
+		if (currentPhotoRelPaths.GetSize () <= 1) {
+			btnPrevPhoto.Hide ();
+			btnNextPhoto.Hide ();
+		} else {
+			btnPrevPhoto.Enable ();
+			btnNextPhoto.Enable ();
+			if (currentPhotoIndex == 0) btnPrevPhoto.Disable ();
+			if (currentPhotoIndex + 1 >= currentPhotoRelPaths.GetSize ()) btnNextPhoto.Disable ();
+		}
+	}
+}
+
+void ComponentInfoPalette::SetMenuItemCheckedState (bool checked)
+{
+	API_MenuItemRef ref = {};
+	GSFlags flags = {};
+	ref.menuResID = 32500;
+	ref.itemIndex = 1;
+	ACAPI_MenuItem_GetMenuItemFlags (&ref, &flags);
+	if (checked) flags |= API_MenuItemChecked;
+	else flags &= (GSFlags) ~API_MenuItemChecked;
+	ACAPI_MenuItem_SetMenuItemFlags (&ref, &flags);
+}
+
+void ComponentInfoPalette::DoViewPhotos ()
+{
+	if (currentPhotoRelPaths.IsEmpty ()) return;
+
+	// 显示当前照片缩略图
+	ShowPhotoAtIndex (currentPhotoIndex);
+
+	IO::Location photoFolderLoc, projectFolderLoc;
+	GS::UniString projectName;
+	GSErrCode err = ComponentInfo::GetProjectPhotoFolder (photoFolderLoc, projectFolderLoc, projectName);
+	if (err != NoError) {
+		ACAPI_WriteReport ("请先保存项目后再查看照片。", true);
+		return;
+	}
+
+	GS::UniString projectFolderPath;
+	if (projectFolderLoc.ToPath (&projectFolderPath) != NoError) return;
+
+	// 构建当前照片的完整路径
+	GS::UniString relPath = currentPhotoRelPaths[currentPhotoIndex];
+	GS::UniString fullPath = projectFolderPath;
+	if (!fullPath.IsEmpty () && fullPath.GetLast () != '/' && fullPath.GetLast () != '\\') fullPath += "/";
+	fullPath += relPath;
+
+	GS::Array<GS::UniString> argv;
+	argv.Push (fullPath);  // 用默认程序打开当前照片
+
+	IO::Location openCmd ("/usr/bin/open");
+	err = IO::Process::ApplicationLauncher::Instance ().Launch (openCmd, argv);
+	if (err != NoError)
+		ACAPI_WriteReport ("打开照片失败: %s", true, ErrID_To_Name (err));
+}
+
+void ComponentInfoPalette::PanelCloseRequested (const DG::PanelCloseRequestEvent&, bool* accepted)
+{
+	Hide ();
+	*accepted = true;
+}
+
+void ComponentInfoPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
+{
+	if (ev.GetSource () == &btnViewPhotos)
+		DoViewPhotos ();
+	else if (ev.GetSource () == &btnPrevPhoto)
+		DoPrevPhoto ();
+	else if (ev.GetSource () == &btnNextPhoto)
+		DoNextPhoto ();
+	else if (ev.GetSource () == &btnDeletePhoto)
+		DoDeletePhoto ();
+	else if (ev.GetSource () == &btnEditInfo)
+		EnterEditMode ();
+	else if (ev.GetSource () == &btnSelectPhotos)
+		DoSelectPhotos ();
+	else if (ev.GetSource () == &btnSave)
+		ExitEditMode (true);
+	else if (ev.GetSource () == &btnCancel)
+		ExitEditMode (false);
+}
+
+void ComponentInfoPalette::UpdateEditModeUI ()
+{
+	if (isEditMode) {
+		btnEditInfo.Hide ();
+		btnSelectPhotos.Show ();
+		btnSave.Show ();
+		btnCancel.Show ();
+		editCompId.Enable ();
+		editPhotoDesc.Enable ();
+		// 编辑模式下，如果有照片则显示删除按钮
+		if (!currentPhotoRelPaths.IsEmpty ()) {
+			btnDeletePhoto.Show ();
+		}
+	} else {
+		btnEditInfo.Show ();
+		btnSelectPhotos.Hide ();
+		btnSave.Hide ();
+		btnCancel.Hide ();
+		btnDeletePhoto.Hide ();
+		editCompId.Disable ();
+		editPhotoDesc.Disable ();
+	}
+}
+
+void ComponentInfoPalette::EnterEditMode ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		ACAPI_WriteReport ("请先选择一个构件。", true);
+		return;
+	}
+	// 保存原始值用于编辑检测
+	originalCompId = editCompId.GetText ();
+	originalPhotoDesc = editPhotoDesc.GetText ();
+	isEditMode = true;
+	pendingPhotoLocations.Clear ();
+	UpdateEditModeUI ();
+}
+
+void ComponentInfoPalette::ExitEditMode (bool save)
+{
+	if (save) {
+		DoSave ();
+	}
+	isEditMode = false;
+	pendingPhotoLocations.Clear ();
+	UpdateEditModeUI ();
+	RefreshContent ();
+}
+
+void ComponentInfoPalette::DoSelectPhotos ()
+{
+	DG::FileDialog dlg (DG::FileDialog::OpenMultiFile);
+	FTM::FileTypeManager mgr ("ComponentInfoPhotos");
+	FTM::FileType typeJpg ("JPEG", "jpg", 0, 0, 0);
+	FTM::FileType typePng ("PNG", "png", 0, 0, 0);
+	FTM::TypeID idJpg = mgr.AddType (typeJpg);
+	FTM::TypeID idPng = mgr.AddType (typePng);
+	dlg.AddFilter (idJpg);
+	dlg.AddFilter (idPng);
+	dlg.SetTitle ("选择照片");
+	if (dlg.Invoke ()) {
+		pendingPhotoLocations.Clear ();
+		USize n = dlg.GetSelectionCount ();
+		for (UIndex i = 0; i < n; ++i)
+			pendingPhotoLocations.Push (dlg.GetSelectedFile (i));
+		
+		// 显示选择的照片路径
+		GS::UniString t;
+		t += "已选 ";
+		t += GS::ValueToUniString (pendingPhotoLocations.GetSize ());
+		t += " 张新照片:\n";
+		for (UIndex i = 0; i < pendingPhotoLocations.GetSize (); ++i) {
+			GS::UniString path;
+			pendingPhotoLocations[i].ToPath (&path);
+			t += path;
+			if (i + 1 < pendingPhotoLocations.GetSize ()) {
+				t += "\n";
+			}
+		}
+		textPhotoPaths.SetText (t);
+
+		// 显示第一张待选照片的预览
+		if (!pendingPhotoLocations.IsEmpty ()) {
+			ShowPendingPhotoPreview (0);
+		}
+	}
+}
+
+void ComponentInfoPalette::ShowPendingPhotoPreview (UInt32 index)
+{
+	pictureItem.SetPicture (DG::Picture ());
+	if (index >= pendingPhotoLocations.GetSize ()) return;
+
+	GX::Image img { pendingPhotoLocations[index] };
+	if (img.IsEmpty ()) return;
+
+	UInt32 imgW = img.GetWidth ();
+	UInt32 imgH = img.GetHeight ();
+	short ctrlW = pictureItem.GetWidth ();
+	short ctrlH = pictureItem.GetHeight ();
+
+	if (imgW == 0 || imgH == 0 || ctrlW <= 0 || ctrlH <= 0) return;
+
+	double scaleW = (double) ctrlW / (double) imgW;
+	double scaleH = (double) ctrlH / (double) imgH;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	UInt32 newW = (UInt32) (imgW * scale);
+	UInt32 newH = (UInt32) (imgH * scale);
+	if (newW < 1) newW = 1;
+	if (newH < 1) newH = 1;
+
+	NewDisplay::NativeImage nativeImg = img.ToNativeImage (1.0, false);
+	NewDisplay::NativeImage resized = nativeImg.Resize (newW, newH);
+	GX::Image scaledImg (resized);
+	void* dgData = scaledImg.ToDGPicture ();
+	if (dgData != nullptr) {
+		pictureItem.SetPicture (DG::Picture (dgData));
+	}
+
+	// 更新索引文本
+	GS::UniString idxText;
+	idxText += GS::ValueToUniString (index + 1);
+	idxText += " / ";
+	idxText += GS::ValueToUniString (pendingPhotoLocations.GetSize ());
+	textPhotoIndex.SetText (idxText);
+}
+
+bool ComponentInfoPalette::HasUnsavedChanges () const
+{
+	if (!isEditMode) {
+		return false;
+	}
+	
+	// 检查构件编号是否修改
+	GS::UniString currentCompId = editCompId.GetText ();
+	if (currentCompId != originalCompId) {
+		return true;
+	}
+	
+	// 检查照片说明是否修改
+	GS::UniString currentPhotoDesc = editPhotoDesc.GetText ();
+	if (currentPhotoDesc != originalPhotoDesc) {
+		return true;
+	}
+	
+	// 检查是否有待保存的照片
+	if (!pendingPhotoLocations.IsEmpty ()) {
+		return true;
+	}
+	
+	return false;
+}
+
+void ComponentInfoPalette::DoSave ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		ACAPI_WriteReport ("请先选择一个构件。", true);
+		return;
+	}
+
+	GS::UniString compId = editCompId.GetText ();
+	GS::UniString photoDesc = editPhotoDesc.GetText ();
+	API_Guid elemGuid = currentElemGuid;
+	GS::Array<IO::Location> photoLocs = pendingPhotoLocations;
+
+	// 第一步：检查属性是否对当前元素可用，如果不可用则删除并重建属性组
+	ComponentInfo::PropertyDefinitionGuids guids;
+	bool needRecreate = false;
+
+	// 先尝试查找现有属性
+	GSErrCode findErr = ComponentInfo::FindPropertyDefinitions (guids);
+	if (findErr == NoError) {
+		// 检查属性是否对当前元素可用
+		bool available = ACAPI_Element_IsPropertyDefinitionAvailable (elemGuid, guids.compIdGuid);
+		if (!available) {
+			needRecreate = true;
+		}
+	}
+
+	if (needRecreate) {
+		// 删除并重建属性组（使其对所有元素类型可用）
+		GSErrCode recreateErr = ACAPI_CallUndoableCommand ("重建属性组",
+			[&] () -> GSErrCode {
+				return ComponentInfo::DeleteAndRecreatePropertyGroup (guids);
+			}
+		);
+		if (recreateErr != NoError) {
+			DG::InformationAlert ("需要手动操作", 
+				"属性组重建失败。\n\n请手动操作：\n1. 打开 选项 → 属性管理器\n2. 删除 \"构件扩展信息\" 属性组\n3. 重新保存", 
+				"确定");
+			return;
+		}
+	} else {
+		// 确保属性存在
+		GSErrCode fixErr = ACAPI_CallUndoableCommand ("确保属性定义",
+			[&] () -> GSErrCode {
+				return ComponentInfo::EnsurePropertyGroupAndDefinitions (guids);
+			}
+		);
+		if (fixErr != NoError) {
+			ACAPI_WriteReport ("确保属性定义失败: %s", true, ErrID_To_Name (fixErr));
+			return;
+		}
+	}
+
+	// 保存当前的照片路径列表（可能已被编辑模式下的删除操作修改）
+	GS::Array<GS::UniString> remainingPhotoPaths = currentPhotoRelPaths;
+
+	// 第二步：在另一个命令中写入属性值
+	GSErrCode cmdErr = ACAPI_CallUndoableCommand ("保存构件信息",
+		[&] () -> GSErrCode {
+			GSErrCode err;
+
+			// 1. 使用编辑后的照片路径列表（已排除删除的照片）
+			GS::Array<GS::UniString> allRelPaths = remainingPhotoPaths;
+
+			// 2. 如果有新照片，复制到构件文件夹
+			GS::Array<GS::UniString> newRelPaths;
+			if (!photoLocs.IsEmpty ()) {
+				UInt32 startIndex = (UInt32) allRelPaths.GetSize ();
+				err = ComponentInfo::CopyPhotosForComponent (elemGuid, photoLocs, newRelPaths, startIndex);
+				if (err != NoError) {
+					ACAPI_WriteReport ("复制照片失败: %s", true, ErrID_To_Name (err));
+					return err;
+				}
+				// 添加新照片路径
+				for (UInt32 i = 0; i < newRelPaths.GetSize (); ++i) {
+					allRelPaths.Push (newRelPaths[i]);
+				}
+			}
+
+			// 3. 写入属性
+			err = ComponentInfo::WritePropertiesToElement (elemGuid, guids, compId, photoDesc, allRelPaths);
+			if (err != NoError) {
+				ACAPI_WriteReport ("保存属性失败: %s", true, ErrID_To_Name (err));
+				return err;
+			}
+			return NoError;
+		}
+	);
+
+	if (cmdErr == NoError) {
+		ACAPI_WriteReport ("构件信息已保存。", false);
+		// 清空待保存的照片
+		pendingPhotoLocations.Clear ();
+		// 刷新显示
+		RefreshContent ();
+	}
+}
+
+GSErrCode ComponentInfoPalette::SelectionChangeHandler (const API_Neig*)
+{
+	if (HasInstance () && GetInstance ().IsVisible ()) {
+		ComponentInfoPalette& instance = GetInstance ();
+		
+		// 检查是否有未保存的更改
+		if (instance.HasUnsavedChanges ()) {
+			// 获取当前构件标识
+			GS::UniString currentIdentifier;
+			if (instance.currentElemGuid != APINULLGuid) {
+				ComponentInfo::GetComponentIdentifier (instance.currentElemGuid, currentIdentifier);
+			} else {
+				currentIdentifier = "当前构件";
+			}
+			
+			// 构建警告消息
+			GS::UniString warningMessage;
+			warningMessage += "你选择了另一个构件，但你编辑的内容将仍然存储到构件";
+			warningMessage += currentIdentifier;
+			warningMessage += "当中去。";
+			
+			// 显示模态警告对话框
+			DG::InformationAlert ("警告", warningMessage, "确定");
+			
+			// 自动保存当前编辑
+			instance.DoSave ();
+			
+			// 退出编辑模式
+			instance.isEditMode = false;
+			instance.UpdateEditModeUI ();
+		}
+		
+		// 刷新显示新选择的构件
+		instance.RefreshContent ();
+	}
+	return NoError;
+}
+
+GSErrCode ComponentInfoPalette::PaletteControlCallBack (Int32, API_PaletteMessageID messageID, GS::IntPtr param)
+{
+	switch (messageID) {
+		case APIPalMsg_OpenPalette:
+			if (!HasInstance ()) CreateInstance ();
+			GetInstance ().Show ();
+			break;
+		case APIPalMsg_ClosePalette:
+			if (HasInstance ()) GetInstance ().Hide ();
+			break;
+		case APIPalMsg_HidePalette_Begin:
+			if (HasInstance () && GetInstance ().IsVisible ()) GetInstance ().Hide ();
+			break;
+		case APIPalMsg_HidePalette_End:
+			if (HasInstance () && !GetInstance ().IsVisible ()) GetInstance ().Show ();
+			break;
+		case APIPalMsg_IsPaletteVisible:
+			*(reinterpret_cast<bool*> (param)) = HasInstance () && GetInstance ().IsVisible ();
+			break;
+		default:
+			break;
+	}
+	return NoError;
+}
+
+Int32 ComponentInfoPalette::GetPaletteReferenceId ()
+{
+	return GS::CalculateHashValue (s_paletteGuid);
+}
+
+GSErrCode ComponentInfoPalette::RegisterPaletteControlCallBack ()
+{
+	return ACAPI_RegisterModelessWindow (
+		GetPaletteReferenceId (),
+		PaletteControlCallBack,
+		API_PalEnabled_FloorPlan + API_PalEnabled_Section + API_PalEnabled_Elevation +
+		API_PalEnabled_InteriorElevation + API_PalEnabled_3D + API_PalEnabled_Detail +
+		API_PalEnabled_Worksheet + API_PalEnabled_Layout + API_PalEnabled_DocumentFrom3D,
+		GSGuid2APIGuid (s_paletteGuid));
+}

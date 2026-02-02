@@ -1,0 +1,188 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the MEP_Test Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+#include "Resources.hpp"
+
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_MEPTest
+}
+
+'GICN' 32700 "Settings Extra page icon" {
+		"Panel_Icon"
+}
+
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"MEP_Test"
+/* [  2] */		"MEP_Test Add-On"
+}
+
+'STR#' 32500 "Menu Description" {
+/* [   ] */		"Test"
+/* [   ] */		"New MEP"
+/* [  1] */		"Place MEP Elements based on current defaults^E3^ES^EE"
+/* [  2] */		"Place a copy of selected Terminals^E3^ES^EE"
+/* [  3] */		"-"
+/* [  4] */		"Place and connect two continuous Routing Elements^E3^ES^EE"
+/* [  5] */		"Place and connect two Routing Elements in a T shape^E3^ES^EE"
+/* [  6] */		"Place and connect three Routing Elements in a T shape^E3^ES^EE"
+/* [  7] */		"Place and connect two MEP Elements to a Routing Element^E3^ES^EE"
+/* [  8] */		"Place and connect Routing Elements with Tee and Cross^E3^ES^EE"
+/* [  9] */		"Place and connect two Routing Elements with Accessory^E3^ES^EE"
+/* [ 10] */		"Place polyline FlexibleSegments^E3^ES^EE"
+/* [ 11] */		"Place segmented routing element^E3^ES^EE"
+/* [ 12] */		"Place Routing Elements based on their first Favorite^E3^ES^EE"
+/* [ 13] */		"-"
+/* [ 14] */		"Query details of selected MEP Elements^E3^ES^EE"
+/* [ 15] */		"Query details of Branch defaults^E3^ES^EE"
+/* [ 16] */		"-"
+/* [ 17] */		"Modify the ports of selected Terminals^E3^ES^EE"
+/* [ 18] */		"Modify selected Routing Elements^E3^ES^EE"
+/* [ 19] */		"Modify selected Flexible Segments^E3^ES^EE"
+/* [ 20] */		"Modify Selected Take-off^E3^ES^EE"
+/* [ 21] */		"Modify (resize, shift and reorient) selected MEP Elements^E3^ES^EE"
+/* [ 22] */		"Modify Selected Element General Parameters^E3^ES^EE"
+/* [ 23] */		"Modify Selected Equipment's Mirror and Orientation^E3^ES^EE"
+/* [ 24] */		"Modify Selected Pipe Fitting GDL Parameters^E3^ES^EE"
+/* [ 25] */		"Modify Selected Routing Element GDL Parameters^E3^ES^EE"
+/* [ 26] */		"Modify Pipe Fitting Default Parameters^E3^ES^EE"
+/* [ 27] */		"Modify Routing Element Default Parameters^E3^ES^EE"
+/* [ 28] */		"Modify Library Part of Selected Pipe Terminal^E3^ES^EE"
+/* [ 29] */		"Modify Library Part of Default Pipe Terminal then Place^E3^ES^EE"
+/* [ 30] */		"Modify rotation angle and flip Default Equipment then Place^E3^ES^EE"
+/* [ 31] */		"Modify Library Part of Selected Cable Carrier Route's First Rigid Segment^E3^ES^EE"
+/* [ 32] */		"Modify Library Part of Selected Cable Carrier Route's Default Rigid Segment^E3^ES^EE"
+/* [ 33] */		"Modify Library Part of Default Cable Carrier Route's Rigid Segment^E3^ES^EE"
+/* [ 34] */		"-"
+/* [ 35] */		"Delete selected MEP and Routing Elements^E3^ES^EE"
+/* [ 36] */		"-"
+/* [ 37] */		"List details of MEP Preferences^E3^ES^EE"
+/* [ 38] */		"Modify Duct Segment Preferences^E3^ES^EE"
+/* [ 39] */		"Modify Pipe Elbow Preferences^E3^ES^EE"
+/* [ 40] */		"Modify Pipe Branch Preferences^E3^ES^EE"
+/* [ 41] */		"Modify Duct Transition Preferences^E3^ES^EE"
+/* [ 42] */		"Modify Pipe Reference Set^E3^ES^EE"
+/* [ 43] */		"Modify Pipe Angle Set^E3^ES^EE"
+/* [ 44] */		"-"
+/* [ 45] */		"Create element set from selected Elements^E3^ES^EE"
+/* [ 46] */		"Create links between selected Elements^E3^ES^EE"
+/* [ 47] */		"Label Subelements of Selected Routing Elements^E3^ES^EE"
+/* [ 48] */		"Label Selected MEP Elements^E3^ES^EE"
+/* [ 49] */		"DistributionSystemsGraph: Label connections in graph^E3^ES^EE"
+/* [ 50] */		"GraphCalculationInterface: Test registration and use of interface^E3^ES^EE"
+/* [ 51] */		"Label Current System Instances and Groups^E3^ES^EE"
+/* [ 52] */		"-"
+/* [ 53] */		"GenerateLargeSystems_Duct: Generate large duct systems for testing performance^E3^ES^EE"
+/* [ 54] */		"GenerateLargeSystems_Pipe: Generate large pipe systems for testing performance^E3^ES^EE"
+/* [ 55] */		"Set Route elements' floor plan display to 'By MVO'^E3^ES^EE"
+/* [ 56] */		"Set Route elements' floor plan display to 'Projected'^E3^ES^EE"
+/* [ 57] */		"Set Route elements' floor plan display to 'Projected with overhead'^E3^ES^EE"
+/* [ 58] */		"Set Route elements' floor plan display to 'Symbolic'^E3^ES^EE"
+/* [ 59] */		"Set Route elements' cut plane position to 'At Upper Display Limit'^E3^ES^EE"
+/* [ 60] */		"Set Route elements' cut plane position to 'By View Settings'^E3^ES^EE"
+/* [ 61] */		"Set Route elements' show projection to 'To FloorPlan Range'^E3^ES^EE"
+/* [ 62] */		"Set Route elements' show on stories to 'All Relevant Stories'^E3^ES^EE"
+/* [ 63] */		"Set Route elements' show on stories to 'Home Story Only'^E3^ES^EE"
+}
+
+'STR#' 32600 "Menu Prompt Strings" {
+/* [   ] */		"Test"
+/* [   ] */		"New MEP"
+/* [  1] */		"Place MEP Elements based on current defaults"
+/* [  2] */		"Place a copy of selected Terminals"
+/* [  3] */		"-"
+/* [  4] */		"Place and connect two continuous Routing Elements"
+/* [  5] */		"Place and connect two Routing Elements in a T shape"
+/* [  6] */		"Place and connect three Routing Elements in a T shape"
+/* [  7] */		"Place and connect two MEP Elements to a Routing Element"
+/* [  8] */		"Place and connect Routing Elements with Tee and Cross"
+/* [  9] */		"Place and connect two Routing Elements with Accessory"
+/* [ 10] */		"Place polyline FlexibleSegments"
+/* [ 11] */		"Place segmented routing"
+/* [ 12] */		"Place Routing Elements based on their first Favorite"
+/* [ 13] */		"-"
+/* [ 14] */		"Query details of selected MEP Elements"
+/* [ 15] */		"Query details of Branch defaults"
+/* [ 16] */		"-"
+/* [ 17] */		"Modify the ports of selected Terminals"
+/* [ 18] */		"Modify selected Routing Elements"
+/* [ 19] */		"Modify selected Flexible Segments"
+/* [ 20] */		"Modify Selected Take-off"
+/* [ 21] */		"Modify (resize, shift and reorient) selected MEP Elements"
+/* [ 22] */		"Modify Selected Element General Parameters"
+/* [ 23] */		"Modify Selected Equipment's Mirror and Orientation"
+/* [ 24] */		"Modify Selected Pipe Fitting GDL Parameters"
+/* [ 25] */		"Modify Selected Routing Element GDL Parameters"
+/* [ 26] */		"Modify Pipe Fitting Default Parameters"
+/* [ 27] */		"Modify Routing Element Default Parameters"
+/* [ 28] */		"Modify Library Part of Selected Pipe Terminal"
+/* [ 29] */		"Modify Library Part of Default Pipe Terminal then Place"
+/* [ 30] */		"Modify rotation angle and flip Default Equipment then Place"
+/* [ 31] */		"Modify Library Part of Selected Cable Carrier Route's First Rigid Segment"
+/* [ 32] */		"Modify Library Part of Selected Cable Carrier Route's Default Rigid Segment"
+/* [ 33] */		"Modify Library Part of Default Cable Carrier Route's Rigid Segment"
+/* [ 34] */		"-"
+/* [ 35] */		"Delete selected MEP and Routing Elements"
+/* [ 36] */		"-"
+/* [ 37] */		"List details of MEP Preferences"
+/* [ 38] */		"Modify Duct Segment Preferences"
+/* [ 39] */		"Modify Pipe Elbow Preferences"
+/* [ 40] */		"Modify Pipe Branch Preferences"
+/* [ 41] */		"Modify Duct Transition Preferences"
+/* [ 42] */		"Modify Pipe Reference Set"
+/* [ 43] */		"Modify Pipe Angle Set"
+/* [ 44] */		"-"
+/* [ 45] */		"Create element set from selected Elements"
+/* [ 46] */		"Create links between selected Elements"
+/* [ 47] */		"Label Subelements of Selected Routing Elements"
+/* [ 48] */		"Label Selected MEP Elements"
+/* [ 49] */		"DistributionSystemsGraph: Label connections in graph"
+/* [ 50] */		"GraphCalculationInterface: Test registration and use of interface"
+/* [ 51] */		"Label Current System Instances and Groups"
+/* [ 52] */		"-"
+/* [ 53] */		"GenerateLargeSystems_Duct: Generate large duct systems for testing performance"
+/* [ 54] */		"GenerateLargeSystems_Pipe: Generate large pipe systems for testing performance"
+/* [ 55] */		"Set Route elements' floor plan display to 'By MVO'"
+/* [ 56] */		"Set Route elements' floor plan display to 'Projected'"
+/* [ 57] */		"Set Route elements' floor plan display to 'Projected with overhead'"
+/* [ 58] */		"Set Route elements' floor plan display to 'Symbolic'"
+/* [ 59] */		"Set Route elements' cut plane position to 'At Upper Display Limit'"
+/* [ 60] */		"Set Route elements' cut plane position to 'By View Settings'"
+/* [ 61] */		"Set Route elements' show projection to 'To FloorPlan Range'"
+/* [ 62] */		"Set Route elements' show on stories to 'All Relevant Stories'"
+/* [ 63] */		"Set Route elements' show on stories to 'Home Story Only'"
+}
+
+'STR#' IDS_SETTINGSPAGE_NAME "MEP test settings page" {
+/* [  1] */		"MEP test settings page"
+}
+
+'GDLG'  SettingsPageId  TabPage 0    0   444	152		"MEP test settings page" {
+/* [  1] */ LeftText            0    8   110	16		LargePlain  vCenter  "Diameter:"
+/* [  2] */ MMInchEdit		  120    8   70		23		LargePlain  "0" "1e5"
+/* [  3] */ LeftText            0   38   110	16		LargePlain  vCenter  "Custom Text:"
+/* [  4] */ TextEdit		  120   38   70		23		LargePlain  255
+/* [  5] */ LeftText            0   68   110	16		LargePlain  vCenter  "Custom Value:"
+/* [  6] */ RealEdit		  120   68   70		23		LargePlain  noFrame  ""  ""
+/* [  7] */ LeftText            0   98   110	16		LargePlain  vCenter  "Perimeter:"
+/* [  8] */ MMInchEdit		  120   98   70		23		LargePlain  "0" "1e5"
+/* [  9] */ LeftText            0   128  110	16		LargePlain  vCenter  "Cross Section Area:"
+/* [  10] */ AreaEdit		  120   128  70		23		LargePlain  "0" "1e5"
+}
+
+'DLGH'  SettingsPageId  DLG_SettingsPageId_MEP_test_settings_page {
+1	""							LeftText_0
+2	""							MMInchEdit_0
+3	""							LeftText_1
+4	""							TextEdit_0
+5	""							LeftText_2
+6	""							RealEdit_0
+7	""							LeftText_3
+8	""							MMInchEdit_1
+9	""							LeftText_4
+10	""							AreaEdit_0
+}

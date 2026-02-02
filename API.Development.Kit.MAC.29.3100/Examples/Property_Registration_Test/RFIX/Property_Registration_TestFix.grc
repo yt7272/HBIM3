@@ -1,0 +1,32 @@
+﻿#include "MDIDs_APICD.h"
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_Property_Registration_Test
+}
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"Property Registration Test"
+/* [  2] */		"API Test Add-on"
+}
+
+'STR#' 32500 "Menu" {
+/* [   ] */		"Test"
+/* [   ] */		"Property Registration"
+/* [  1] */		"Property Registration Test^ES^EE^EI^ED^EW^E3^EL"
+}
+
+'GDLG'  32500    Palette | topCaption | close | grow   0   0  500  90  "Property Registration"  {
+/* [  1] */ Button				  10   10   90   23	LargePlain  "Register"
+/* [  2] */ Button				  10   43   90   23	LargePlain  "Unregister"
+/* [  3] */ LeftText			 110   12  470   16	LargePlain  "Test property not registered"
+}
+
+'DLGH'  32500  DLG_32500_Property_Registration {
+1	"Register Button"		Button_0
+2	"Unregister Button"		Button_1
+}
+
+'GICN'  32700	"Test icon" {
+          "TestIcon"
+}

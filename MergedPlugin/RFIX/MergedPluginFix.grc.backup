@@ -1,0 +1,122 @@
+/* 与 HBIM 完全一致：625438022=开发者ID, 170868903=本地ID；与 HBIM 共用同一组 ID。*/
+'MDID' 32500 "Add-On Identifier" {
+	625438022
+	170868903
+}
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"Merged Plugin"
+/* [  2] */		"Merged plugin for component info and IFC properties"
+}
+
+'STR#' 32500 "Menu" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"Merged Plugin"
+/* [  1] */			"显示/隐藏构件信息面板^EP"
+/* [  2] */			"导出梁IFC属性到JSON"
+}
+
+'STR#' 32600 "Menu Prompt" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"Merged Plugin"
+/* [  1] */			"显示或隐藏构件信息面板"
+/* [  2] */			"导出所有梁元素的IFC属性到JSON文件"
+}
+
+'GDLG' 32510  Modal  0  0  400  220  "构件扩展信息" {
+/* [  1] */ Button			  310  188   70   24	LargePlain  "OK"
+/* [  2] */ Button			  230  188   70   24	LargePlain  "Cancel"
+/* [  3] */ LeftText		    10   12   80   20	LargePlain  vCenter  "构件编号:"
+/* [  4] */ TextEdit		    95   10  285   22	LargePlain  255
+/* [  5] */ LeftText		    10   42   80   20	LargePlain  vCenter  "照片说明:"
+/* [  6] */ TextEdit		    95   40  285   22	LargePlain  512
+/* [  7] */ LeftText		    10   72   100  20	LargePlain  vCenter  "照片:"
+/* [  8] */ Button			  95   70  120   24	LargePlain  "选择照片"
+/* [  9] */ LeftText		    10  100  380  18	LargePlain  vCenter  "已选 0 张"
+}
+
+'DLGH' 32510  DLG_MergedPluginDialog {
+1	""	Button_0
+2	""	Button_1
+3	""	LeftText_0
+4	""	TextEdit_0
+5	""	LeftText_1
+6	""	TextEdit_1
+7	""	LeftText_2
+8	""	Button_2
+9	""	LeftText_3
+}
+
+/* --- 构件扩展信息侧边栏面板 (Palette) --- */
+'GDLG' 32520  Palette | topCaption | close | grow  0  0  340  620  "构件扩展信息" {
+/* [  1] */ LeftText		  10   5  320  18	LargePlain  vCenter  ""
+/* [  2] */ LeftText		  10  25  320  18	LargePlain  vCenter  "分类: —"
+/* [  3] */ LeftText		  10  47   75  18	LargePlain  vCenter  "构件编号:"
+/* [  4] */ TextEdit		  90  45  230  20	LargePlain  255
+/* [  5] */ LeftText		  10  73   75  18	LargePlain  vCenter  "照片说明:"
+/* [  6] */ TextEdit		  90  71  230  22	LargePlain  1024
+/* [  7] */ LeftText		  10 101   75  18	LargePlain  vCenter  "照片位置:"
+/* [  8] */ LeftText		  90 101  320  18	SmallPlain  vCenter  "—"
+/* [  9] */ Picture		  10 172  320  200	0
+/* [ 10] */ Button		  10 420   40  24	LargePlain  "<"
+/* [ 11] */ Button		  55 420   60  24	LargePlain  "删除"
+/* [ 12] */ CenterText	 120 422  100  20	LargePlain  vCenter  ""
+/* [ 13] */ Button		 225 420   40  24	LargePlain  ">"
+/* [ 14] */ Button		  10 454  100  24	LargePlain  "查看照片"
+/* [ 15] */ Button		  120 454  100  24	LargePlain  "填写信息"
+/* [ 16] */ Button		  230 454   70  24	LargePlain  "选择照片"
+/* [ 17] */ Button		  10 488   70  24	LargePlain  "保存"
+/* [ 18] */ Button		  90 488   70  24	LargePlain  "取消"
+/* [ 19] */ Button		  170 488  120  24	LargePlain  "查看IFC属性"
+}
+
+'DLGH' 32520  DLG_MergedPluginPalette {
+1	""	LeftText_ComponentIdentifier
+2	""	LeftText_Classification
+3	""	LeftText_CompId
+4	""	TextEdit_CompId
+5	""	LeftText_PhotoDesc
+6	""	MultiLineEdit_PhotoDesc
+7	""	LeftText_PhotoPath
+8	""	LeftText_PhotoPathValue
+9	""	LeftText_PropertiesLabel
+10	""	MultiLineEdit_Properties
+11	""	PictureItem_0
+12	""	Button_Prev
+13	""	Button_Delete
+14	""	CenterText_Index
+15	""	Button_Next
+16	""	Button_ViewPhotos
+17	""	Button_EditInfo
+18	""	Button_SelectPhotos
+19	""	Button_Save
+20	""	Button_Cancel
+}
+
+/* --- IFC属性查看对话框 --- */
+'GDLG' 32530  Modal  0  0  500  400  "IFC属性" {
+/* [  1] */ Button			  350  360   70   24	LargePlain  "OK"
+/* [  2] */ Button			  260  360   70   24	LargePlain  "Cancel"
+/* [  3] */ TextEdit		  10   10  480  340	LargePlain  4096
+}
+
+ 'DLGH' 32530  DLG_MergedPluginIFCPropertiesDialog {
+ 1	""	Button_Ok
+ 2	""	Button_Cancel
+ 3	""	TextEdit_Properties
+ }
+
+/* --- GlobalId Warning Dialog --- */
+'GDLG' 32540  Modal  0  0  350  150  "Missing GlobalId" {
+/* [  1] */ LeftText		  10   10  330  20	LargePlain  vCenter  "构件缺少GlobalId属性。请输入GlobalId用于照片存储:"
+/* [  2] */ TextEdit		  10   40  330  22	LargePlain  255
+/* [  3] */ Button		  190  110  70   24	LargePlain  "OK"
+/* [  4] */ Button		  270  110  70   24	LargePlain  "Cancel"
+}
+
+'DLGH' 32540  DLG_GlobalIdWarningDialog {
+1	""	LeftText_Message
+2	""	TextEdit_GlobalId
+3	""	Button_Ok
+4	""	Button_Cancel
+}

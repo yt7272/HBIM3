@@ -1,0 +1,51 @@
+﻿/* *****************************************************************************
+// Non-localizable resource description for the LibraryManagement_Test Add-On
+// ****************************************************************************/
+
+#include "MDIDs_APICD.h"
+
+
+'MDID' 32500 "Add-On Identifier" {
+	MDID_APICD
+	MDID_APICD_LibraryManagerTest
+}
+
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"LibraryManagement_Test"
+/* [  2] */		"LibraryManagement_Test Add-On"
+}
+
+'STR#' 32500 "Menu Description" {
+/* [   ] */		"Test"
+/* [   ] */		"Library Management"
+/* [  1] */			"Add Selected Library^E3^ES^EE"
+/* [  2] */			"Add Server Library^E3^ES^EE"
+/* [  3] */			"Remove All Libraries^E3^ES^EE"
+/* [  4] */			"Remove Missing Libraries^E3^ES^EE"
+/* [  5] */			"Dump Library List^E3^ES^EE"
+/* [  6] */			"Dump All Library Parts^E3^ES^EE"
+/* [  7] */			"Duplicate Selection To Embedded^E3^ES^EE"
+/* [  8] */			"Create New Object from Selection To Embedded^E3^ES^EE"
+/* [  9] */			"Add Selected Libraries^E3^ES^EE"
+/* [ 10] */			"Add Server Libraries^E3^ES^EE"
+/* [ 11] */			"Upload Selected Libraries To Server^E3^ES^EE"
+/* [ 12] */			"Remove Selected Libraries From Server^E3^ES^EE"
+}
+
+'STR#' 32600 "Menu Prompt Strings" {
+/* [   ] */		"Test"
+/* [   ] */		"Library Management"
+/* [  1] */			"Add Selected Library"
+/* [  2] */			"Add Server Library"
+/* [  3] */			"Remove All Libraries"
+/* [  4] */			"Remove Missing Libraries"
+/* [  5] */			"Dump Library List"
+/* [  6] */			"Dump All Library Parts"
+/* [  7] */			"Duplicate Selection To Embedded"
+/* [  8] */			"Create New Object from Selection To Embedded"
+/* [  9] */			"Add Selected Libraries"
+/* [ 10] */			"Add Server Libraries"
+/* [ 11] */			"Upload Selected Libraries To Server"
+/* [ 12] */			"Remove Selected Libraries From Server"
+}

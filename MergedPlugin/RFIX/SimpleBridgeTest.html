@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>JavaScript Bridge Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background-color: #1a1d23;
+            color: #e2e8f0;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #06b6d4;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #064e3b;
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        .disconnected {
+            background-color: #7f1d1d;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .test-section {
+            background-color: #252a33;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #3f4a5c;
+        }
+        .test-button {
+            background-color: #06b6d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background-color: #22d3ee;
+        }
+        .test-button:disabled {
+            background-color: #64748b;
+            cursor: not-allowed;
+        }
+        .log {
+            background-color: #1e293b;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #334155;
+        }
+        .function-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .function-item {
+            background-color: #334155;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid #06b6d4;
+        }
+        .success {
+            color: #10b981;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .warning {
+            color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <h1>JavaScript Bridge Test</h1>
+    
+    <div id="bridge-status" class="status disconnected">Checking bridge connection...</div>
+    
+    <div class="test-section">
+        <h3>Bridge Connection</h3>
+        <button class="test-button" onclick="checkBridge()">Check Bridge</button>
+        <button class="test-button" onclick="listFunctions()">List Functions</button>
+        <button class="test-button" onclick="testGetPluginVersion()">Test GetPluginVersion</button>
+        <button class="test-button" onclick="testGetSelectedElements()">Test GetSelectedElements</button>
+        <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+        
+        <div id="function-list" class="function-list">
+            <!-- Function list will appear here -->
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Log</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let logEl;
+        
+        function log(message, type = 'info') {
+            if (!logEl) logEl = document.getElementById('log');
+            const timestamp = new Date().toISOString().substr(11, 8);
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            const line = `[${timestamp}] ${prefix} ${message}`;
+            logEl.textContent = line + '\n' + logEl.textContent;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function updateBridgeStatus(isConnected, functions = [], version = null) {
+            const statusEl = document.getElementById('bridge-status');
+            if (isConnected) {
+                statusEl.textContent = `Bridge Connected (${functions.length} functions)`;
+                statusEl.className = 'status connected';
+                if (version) {
+                    statusEl.textContent += ` - Version: ${version}`;
+                }
+            } else {
+                statusEl.textContent = 'Bridge Not Connected';
+                statusEl.className = 'status disconnected';
+            }
+        }
+        
+        function checkBridge() {
+            log('Checking JavaScript bridge...');
+            if (typeof ACAPI === 'undefined') {
+                log('ACAPI object is undefined', 'error');
+                updateBridgeStatus(false);
+                return false;
+            }
+            
+            const funcs = Object.keys(ACAPI).filter(key => typeof ACAPI[key] === 'function');
+            log(`ACAPI object found with ${funcs.length} functions`, 'success');
+            
+            updateBridgeStatus(true, funcs);
+            
+            // Try to get version
+            if (ACAPI.GetPluginVersion) {
+                ACAPI.GetPluginVersion().then(version => {
+                    log(`Plugin version: ${version}`, 'success');
+                    updateBridgeStatus(true, funcs, version);
+                }).catch(err => {
+                    log(`Failed to get version: ${err}`, 'error');
+                });
+            }
+            
+            return true;
+        }
+        
+        function listFunctions() {
+            if (typeof ACAPI === 'undefined') {
+                log('ACAPI not available', 'error');
+                return;
+            }
+            
+            const funcs = Object.keys(ACAPI).filter(key => typeof ACAPI[key] === 'function');
+            const funcListEl = document.getElementById('function-list');
+            funcListEl.innerHTML = '';
+            
+            funcs.forEach(funcName => {
+                const funcEl = document.createElement('div');
+                funcEl.className = 'function-item';
+                funcEl.textContent = funcName;
+                funcListEl.appendChild(funcEl);
+            });
+            
+            log(`Listed ${funcs.length} functions`, 'success');
+        }
+        
+        function testGetPluginVersion() {
+            if (!ACAPI || !ACAPI.GetPluginVersion) {
+                log('GetPluginVersion function not available', 'error');
+                return;
+            }
+            
+            log('Testing GetPluginVersion...');
+            ACAPI.GetPluginVersion().then(version => {
+                log(`✓ GetPluginVersion succeeded: ${version}`, 'success');
+            }).catch(err => {
+                log(`✗ GetPluginVersion failed: ${err}`, 'error');
+            });
+        }
+        
+        function testGetSelectedElements() {
+            if (!ACAPI || !ACAPI.GetSelectedElements) {
+                log('GetSelectedElements function not available', 'error');
+                return;
+            }
+            
+            log('Testing GetSelectedElements...');
+            ACAPI.GetSelectedElements().then(elements => {
+                if (Array.isArray(elements)) {
+                    log(`✓ GetSelectedElements succeeded: ${elements.length} elements`, 'success');
+                    if (elements.length > 0) {
+                        log(`  First element: ${JSON.stringify(elements[0])}`, 'info');
+                    }
+                } else {
+                    log(`✗ GetSelectedElements returned non-array: ${typeof elements}`, 'error');
+                }
+            }).catch(err => {
+                log(`✗ GetSelectedElements failed: ${err}`, 'error');
+            });
+        }
+        
+        function runAllTests() {
+            log('=== Running All Tests ===');
+            checkBridge();
+            setTimeout(() => listFunctions(), 100);
+            setTimeout(() => testGetPluginVersion(), 200);
+            setTimeout(() => testGetSelectedElements(), 300);
+            log('=== Tests Started ===');
+        }
+        
+        // Auto-check on load
+        document.addEventListener('DOMContentLoaded', function() {
+            log('HTML loaded, starting bridge check...');
+            setTimeout(checkBridge, 100);
+        });
+    </script>
+</body>
+</html>

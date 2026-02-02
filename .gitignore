@@ -1,0 +1,42 @@
+# Build
+build/
+*.bundle/
+.build_counter
+*.o
+*.o.d
+*.a
+*.dylib
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.rsrd
+*.stamp
+*.reslist.txt
+*.ro
+*.ro.res.*
+*.strings
+*.i
+ResourceObjects/
+
+# Node (MergedPlugin tests)
+node_modules/
+coverage/
+*.log
+npm-debug.log*
+
+# IDE / OS
+.DS_Store
+.idea/
+*.swp
+*.swo
+*~
+
+# Python / Ruff
+.ruff_cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Optional: 若不想把 API 开发包纳入仓库，可取消下一行注释（需自行下载 SDK）
+# API.Development.Kit.MAC.29.3100/
