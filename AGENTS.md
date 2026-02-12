@@ -28,9 +28,9 @@ cd IFCPropertyReader
 ./build.sh clean           # Clean build with counter reset
 ```
 
-**MergedPlugin:**
+**MergedPlugin (in ReBuild/NewPlugin):**
 ```bash
-cd MergedPlugin
+cd ReBuild/NewPlugin
 ./build.sh                  # Build merged plugin
 ```
 
@@ -300,11 +300,17 @@ node validate_merged_interface.js
 HBIM3/
 ├── ComponentInfo/          # Component property management
 ├── IFCPropertyReader/      # IFC property reading with caching
-├── MergedPlugin/          # Combined plugin with HTML interface
-├── HBIM_Mac/              # Additional plugin variant
+├── ReBuild/               # Build directory containing merged plugin
+│   └── NewPlugin/         # Combined ComponentInfo + IFCPropertyReader (merged)
+├── ComponentInfo.bundle   # Built ComponentInfo plugin (macOS bundle)
+├── MergedPlugin.bundle    # Built merged plugin (macOS bundle)
 ├── API.Development.Kit.MAC.29.3100/  # Required API
-└── AGENTS.md              # This file
+├── .sisyphus/             # AI agent planning and session data
+├── AGENTS.md              # This file (primary guide for AI agents)
+└── README.md              # Project overview
 ```
+
+**Note**: The `MergedPlugin` directory mentioned in older documentation has been consolidated into `ReBuild/NewPlugin/`. Build the merged plugin from `ReBuild/NewPlugin/` using `./build.sh`.```
 
 ## Notes for AI Agents
 

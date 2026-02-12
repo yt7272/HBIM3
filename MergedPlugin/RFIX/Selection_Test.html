@@ -236,6 +236,51 @@
 			text-align: center;
 		}
 
+		.photo-preview-container {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.photo-navigation {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 12px;
+		}
+
+		.photo-nav-btn {
+			background: var(--bg-card);
+			border: 1px solid var(--border);
+			color: var(--text-primary);
+			width: 28px;
+			height: 28px;
+			border-radius: var(--radius);
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 14px;
+			transition: var(--transition);
+		}
+
+		.photo-nav-btn:hover:not(:disabled) {
+			background: var(--hover);
+			border-color: var(--accent);
+		}
+
+		.photo-nav-btn:disabled {
+			opacity: 0.4;
+			cursor: not-allowed;
+		}
+
+		.photo-index {
+			font-size: 12px;
+			color: var(--text-secondary);
+			min-width: 60px;
+			text-align: center;
+		}
+
 		/* Controls Bar */
 		.controls {
 			display: flex;
@@ -571,8 +616,16 @@
 		
 		<div class="form-group">
 			<label class="form-label">照片预览</label>
-			<div class="photo-preview">
-				<div class="photo-preview-placeholder">No photo selected</div>
+			<div class="photo-preview-container">
+				<div class="photo-preview">
+					<div class="photo-preview-placeholder">No photo selected</div>
+					<img id="photo-display" src="" alt="Photo preview" class="hidden">
+				</div>
+				<div class="photo-navigation hidden">
+					<button id="prev-photo-btn" class="photo-nav-btn" disabled>‹</button>
+					<span id="photo-index" class="photo-index">0 / 0</span>
+					<button id="next-photo-btn" class="photo-nav-btn" disabled>›</button>
+				</div>
 			</div>
 		</div>
 		
@@ -1045,6 +1098,72 @@
 			// Notify C++ backend about edit mode change
 			if (typeof ACAPI !== 'undefined' && typeof ACAPI.ComponentInfo_SetEditMode === 'function') {
 				ACAPI.ComponentInfo_SetEditMode('true').catch(err => console.warn('Failed to set edit mode:', err));
+ 			}
+ 		}
+		
+		// Photo preview functionality
+		let currentPhotoIndex = 0;
+		
+		function showPhotoAtIndex(index) {
+			const photoDisplay = document.getElementById('photo-display');
+			const photoPlaceholder = document.querySelector('.photo-preview-placeholder');
+			const prevBtn = document.getElementById('prev-photo-btn');
+			const nextBtn = document.getElementById('next-photo-btn');
+			const photoIndex = document.getElementById('photo-index');
+			const photoNav = document.querySelector('.photo-navigation');
+			
+			if (!currentPhotoPaths || currentPhotoPaths.length === 0) {
+				// No photos - show placeholder
+				photoDisplay.classList.add('hidden');
+				photoPlaceholder.classList.remove('hidden');
+				photoPlaceholder.textContent = 'No photo selected';
+				photoNav.classList.add('hidden');
+				return;
+			}
+			
+			// Validate index
+			if (index < 0) index = 0;
+			if (index >= currentPhotoPaths.length) index = currentPhotoPaths.length - 1;
+			currentPhotoIndex = index;
+			
+			// Update navigation buttons
+			prevBtn.disabled = (currentPhotoIndex === 0);
+			nextBtn.disabled = (currentPhotoIndex === currentPhotoPaths.length - 1);
+			
+			// Update index display
+			photoIndex.textContent = `${currentPhotoIndex + 1} / ${currentPhotoPaths.length}`;
+			
+			// Show photo
+			const photoPath = currentPhotoPaths[currentPhotoIndex];
+			photoDisplay.src = 'file://' + photoPath;
+			photoDisplay.classList.remove('hidden');
+			photoPlaceholder.classList.add('hidden');
+			photoNav.classList.remove('hidden');
+			
+			// Log for debugging
+			console.log(`Showing photo ${currentPhotoIndex + 1}/${currentPhotoPaths.length}: ${photoPath}`);
+		}
+		
+		function showNextPhoto() {
+			if (currentPhotoIndex < currentPhotoPaths.length - 1) {
+				showPhotoAtIndex(currentPhotoIndex + 1);
+			}
+		}
+		
+		function showPrevPhoto() {
+			if (currentPhotoIndex > 0) {
+				showPhotoAtIndex(currentPhotoIndex - 1);
+			}
+		}
+		
+		function updatePhotoPreview() {
+			// Update photo preview based on current photo paths
+			showPhotoAtIndex(0);
+			
+			// Enable/disable view photos button
+			const viewPhotosBtn = document.getElementById('view-photos-btn');
+			if (viewPhotosBtn) {
+				viewPhotosBtn.disabled = !currentPhotoPaths || currentPhotoPaths.length === 0;
 			}
 		}
 		
@@ -1221,8 +1340,9 @@
 										console.log('Photos added and saved successfully');
 										hasUnsavedChanges = false;
 										updateUnsavedIndicator();
-										// Enable view photos button
+										// Enable view photos button and update preview
 										document.getElementById('view-photos-btn').disabled = false;
+										updatePhotoPreview();
 									} else {
 										console.error('Failed to save photos');
 									}
@@ -1260,6 +1380,15 @@
 					console.warn('ComponentInfo_ViewPhotos API not available');
 				}
 			});
+			
+			// Photo navigation buttons
+			document.getElementById('prev-photo-btn').addEventListener('click', function() {
+				showPrevPhoto();
+			});
+			
+			document.getElementById('next-photo-btn').addEventListener('click', function() {
+				showNextPhoto();
+			});
 
 			// Initial load - no element selected
 			// Show empty state initially
@@ -1291,6 +1420,7 @@
 									// Update photo paths display if needed
 									if (currentPhotoPaths.length > 0) {
 										document.getElementById('view-photos-btn').disabled = false;
+										updatePhotoPreview();
 									} else {
 										document.getElementById('view-photos-btn').disabled = true;
 									}
@@ -1300,6 +1430,7 @@
 									document.getElementById('photo-description').value = '';
 									currentPhotoPaths = [];
 									document.getElementById('view-photos-btn').disabled = true;
+									updatePhotoPreview();
 								}
 							}).catch(function (err) {
 								console.error('Failed to load component info:', err);
@@ -1307,6 +1438,7 @@
 								document.getElementById('photo-description').value = '';
 								currentPhotoPaths = [];
 								document.getElementById('view-photos-btn').disabled = true;
+								updatePhotoPreview();
 							});
 						} else {
 							// ComponentInfo_GetComponentInfo API not available
