@@ -1,0 +1,35 @@
+/* HBIM Plugin - Combined IFC Property Reader and Component Property Manager */
+'MDID' 32500 "Add-On Identifier" {
+	625438022
+	170868903
+}
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"HBIM Plugin"
+/* [  2] */		"Plugin for reading IFC properties and managing component attributes"
+}
+
+'DATA' 100 "HBIM Plugin Html" {
+	"index.html"
+}
+
+'STR#' 32500 "Menu" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"HBIM Plugin"
+/* [  1] */			"显示/隐藏构件信息面板^EP"
+}
+
+'STR#' 32600 "Menu Prompt" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"HBIM Plugin"
+/* [  1] */			"显示或隐藏构件信息面板"
+}
+
+/* --- HBIM Plugin Browser Palette：Browser ID 1，默认 480x600，grow 可拖拽调整 --- */
+'GDLG' 32520  Palette | topCaption | close | grow  0  0  480  600  "HBIM Plugin" {
+/* [  1] */ Browser			0   0  480  600
+}
+
+'DLGH' 32520  DLG_HBIMPluginPalette {
+1	"HBIM Plugin"		Browser_0
+}

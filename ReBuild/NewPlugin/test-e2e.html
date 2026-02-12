@@ -1,0 +1,1060 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HBIM构件信息输入工具 - E2E测试</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* 简化样式用于测试 */
+        body { font-family: sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>ArchiCAD插件HTML界面E2E测试</h1>
+    <div id="test-results"></div>
+    
+    <!-- 原始HTML内容 -->
+    <div id="original-content" style="display: none;">
+        <!DOCTYPE html>
+<html>
+<head>
+	<title>HBIM构件信息输入工具</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style type="text/css">
+		/* CSS Variables for Industrial Dark Theme */
+		:root {
+			--bg-dark: #1a1d23;
+			--bg-card: #252a33;
+			--text-primary: #e2e8f0;
+			--text-secondary: #94a3b8;
+			--accent: #06b6d4;
+			--accent-hover: #22d3ee;
+			--border: #3f4a5c;
+			--hover: #2d3748;
+			--shadow: rgba(0, 0, 0, 0.3);
+			--success: #10b981;
+			--warning: #f59e0b;
+			--error: #ef4444;
+			--radius: 4px;
+			--transition: all 0.2s ease;
+		}
+
+		/* Base Reset */
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+			background-color: var(--bg-dark);
+			color: var(--text-primary);
+			font-size: 13px;
+			line-height: 1.4;
+			padding: 12px;
+			min-width: 450px;
+			min-height: 150px;
+			overflow-x: auto;
+			user-select: none;
+		}
+
+		/* ========== 状态类定义 ========== */
+		
+		/* 状态1：未选择构件 */
+		.state-no-selection .group-2 .guid-value,
+		.state-no-selection .group-2 .type-value,
+		.state-no-selection .group-3 .form-input,
+		.state-no-selection .group-3 .photo-preview,
+		.state-no-selection .group-3 .controls button {
+			/* 显示"未选择构件"提示 */
+		}
+		
+		.state-no-selection .group-2 .no-selection-message {
+			display: block;
+		}
+		.state-no-selection .group-2 .guid-value,
+		.state-no-selection .group-2 .type-value {
+			display: none;
+		}
+		
+		.state-no-selection .group-3 .no-info-message {
+			display: none;
+		}
+		.state-no-selection .group-3 .has-info-content {
+			display: none;
+		}
+		
+		/* 状态2：已选择构件无信息 */
+		.state-no-info .group-2 .no-selection-message {
+			display: none;
+		}
+		.state-no-info .group-2 .guid-value,
+		.state-no-info .group-2 .type-value {
+			display: block;
+		}
+		.state-no-info .group-3 .no-info-message {
+			display: block;
+		}
+		.state-no-info .group-3 .has-info-content {
+			display: none;
+		}
+		
+		/* 状态3：已选择构件有信息 */
+		.state-has-info .group-2 .no-selection-message {
+			display: none;
+		}
+		.state-has-info .group-2 .guid-value,
+		.state-has-info .group-2 .type-value {
+			display: block;
+		}
+		.state-has-info .group-3 .no-info-message {
+			display: none;
+		}
+		.state-has-info .group-3 .has-info-content {
+			display: block;
+		}
+
+		/* ========== 第一组信息：标题和版本号 ========== */
+		.group-1 {
+			background: var(--bg-card);
+			border-radius: var(--radius);
+			padding: 16px;
+			margin-bottom: 16px;
+			border: 1px solid var(--border);
+			box-shadow: 0 2px 4px var(--shadow);
+		}
+
+		.plugin-title {
+			font-size: 20px;
+			font-weight: 600;
+			color: var(--accent);
+			margin-bottom: 8px;
+			padding-bottom: 8px;
+			border-bottom: 2px solid var(--border);
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.plugin-title::before {
+			content: '🏗️';
+			font-size: 18px;
+		}
+
+		.version-display {
+			font-size: 12px;
+			color: var(--text-secondary);
+			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+			margin-top: 4px;
+		}
+
+		/* ========== 第二组信息：GUID和TYPE显示 ========== */
+		.group-2 {
+			background: var(--bg-card);
+			border-radius: var(--radius);
+			padding: 16px;
+			margin-bottom: 16px;
+			border: 1px solid var(--border);
+		}
+
+		.group-2 h2 {
+			font-size: 14px;
+			color: var(--accent);
+			margin-bottom: 12px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.group-2 h2::before {
+			content: '';
+			display: inline-block;
+			width: 12px;
+			height: 12px;
+			background-color: var(--accent);
+			border-radius: 2px;
+		}
+
+		.guid-type-container {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 12px;
+		}
+
+		.guid-item, .type-item {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.guid-label, .type-label {
+			font-size: 11px;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			margin-bottom: 4px;
+		}
+
+		.guid-value, .type-value {
+			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+			font-size: 12px;
+			background: rgba(0, 0, 0, 0.2);
+			padding: 6px 10px;
+			border-radius: var(--radius);
+			border-left: 3px solid var(--accent);
+			word-break: break-all;
+			min-height: 32px;
+			display: flex;
+			align-items: center;
+		}
+
+		.no-selection-message {
+			font-size: 12px;
+			color: var(--text-secondary);
+			font-style: italic;
+			text-align: center;
+			padding: 12px;
+			background: rgba(148, 163, 184, 0.1);
+			border-radius: var(--radius);
+			grid-column: 1 / span 2;
+		}
+
+		/* ========== 第三组信息：构件信息填写界面和照片功能 ========== */
+		.group-3 {
+			background: var(--bg-card);
+			border-radius: var(--radius);
+			padding: 16px;
+			border: 1px solid var(--border);
+		}
+
+		.group-3 h2 {
+			font-size: 14px;
+			color: var(--accent);
+			margin-bottom: 12px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.group-3 h2::before {
+			content: '';
+			display: inline-block;
+			width: 12px;
+			height: 12px;
+			background-color: var(--accent);
+			border-radius: 2px;
+		}
+
+		/* 状态消息 */
+		.no-info-message {
+			font-size: 12px;
+			color: var(--text-secondary);
+			font-style: italic;
+			text-align: center;
+			padding: 16px;
+			background: rgba(148, 163, 184, 0.1);
+			border-radius: var(--radius);
+			margin-bottom: 16px;
+		}
+
+		/* 表单组 */
+		.form-group {
+			margin-bottom: 16px;
+		}
+
+		.form-label {
+			display: block;
+			font-size: 12px;
+			color: var(--text-secondary);
+			margin-bottom: 6px;
+			font-weight: 500;
+		}
+
+		.form-input {
+			width: 100%;
+			padding: 8px 12px;
+			background: var(--bg-dark);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			color: var(--text-primary);
+			font-size: 13px;
+			transition: var(--transition);
+		}
+
+		.form-input:focus {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+		}
+
+		.form-input:disabled {
+			background: rgba(26, 29, 35, 0.5);
+			color: var(--text-secondary);
+			cursor: not-allowed;
+		}
+
+		.form-input::placeholder {
+			color: var(--text-secondary);
+		}
+
+		/* 照片预览 */
+		.photo-preview-container {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+
+		.photo-preview {
+			width: 100%;
+			height: 200px;
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px dashed var(--border);
+			border-radius: var(--radius);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow: hidden;
+		}
+
+		.photo-preview img {
+			max-width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
+
+		.photo-preview-placeholder {
+			color: var(--text-secondary);
+			font-size: 12px;
+			text-align: center;
+		}
+
+		.photo-navigation {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 12px;
+		}
+
+		.photo-nav-btn {
+			background: var(--bg-card);
+			border: 1px solid var(--border);
+			color: var(--text-primary);
+			width: 28px;
+			height: 28px;
+			border-radius: var(--radius);
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 14px;
+			transition: var(--transition);
+		}
+
+		.photo-nav-btn:hover:not(:disabled) {
+			background: var(--hover);
+			border-color: var(--accent);
+		}
+
+		.photo-nav-btn:disabled {
+			opacity: 0.4;
+			cursor: not-allowed;
+		}
+
+		.photo-index {
+			font-size: 12px;
+			color: var(--text-secondary);
+			min-width: 60px;
+			text-align: center;
+		}
+
+		.photo-debug-info {
+			font-size: 10px;
+			color: #ff6b6b;
+			background: rgba(255, 107, 107, 0.1);
+			border: 1px solid rgba(255, 107, 107, 0.3);
+			border-radius: var(--radius);
+			padding: 6px 8px;
+			margin-top: 4px;
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+
+		.debug-header {
+			font-weight: bold;
+			color: #ff6b6b;
+			font-size: 10px;
+		}
+
+		.debug-content {
+			font-size: 9px;
+			color: #ffa8a8;
+			white-space: pre-wrap;
+			word-break: break-all;
+			max-height: 60px;
+			overflow-y: auto;
+		}
+
+		/* 控制按钮 */
+		.controls {
+			display: flex;
+			gap: 8px;
+			margin-top: 16px;
+		}
+
+		button {
+			background: var(--accent);
+			color: white;
+			border: none;
+			padding: 8px 16px;
+			border-radius: var(--radius);
+			font-size: 12px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: var(--transition);
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			white-space: nowrap;
+			flex: 1;
+		}
+
+		button:hover {
+			background: var(--accent-hover);
+			transform: translateY(-1px);
+			box-shadow: 0 2px 4px var(--shadow);
+		}
+
+		button:active {
+			transform: translateY(0);
+		}
+
+		button.secondary {
+			background: transparent;
+			border: 1px solid var(--border);
+			color: var(--text-secondary);
+		}
+
+		button.secondary:hover {
+			background: var(--hover);
+			color: var(--text-primary);
+		}
+
+		button:disabled {
+			background: rgba(6, 182, 212, 0.3);
+			cursor: not-allowed;
+			transform: none;
+			box-shadow: none;
+		}
+
+		button.secondary:disabled {
+			background: transparent;
+			border-color: rgba(63, 74, 92, 0.5);
+			color: rgba(148, 163, 184, 0.5);
+		}
+
+		/* 未保存更改指示器 */
+		.unsaved-indicator {
+			color: var(--warning);
+			font-weight: bold;
+			margin-left: 2px;
+		}
+
+		/* 编辑模式按钮 */
+		.edit-mode-buttons {
+			display: flex;
+			gap: 8px;
+			margin-top: 8px;
+		}
+
+		/* IFC属性部分 */
+		.ifc-properties-section {
+			margin-top: 16px;
+			padding-top: 16px;
+			border-top: 1px solid var(--border);
+		}
+
+		.ifc-properties-section h3 {
+			font-size: 13px;
+			color: var(--accent);
+			margin-bottom: 12px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.ifc-properties-section h3::before {
+			content: '';
+			display: inline-block;
+			width: 12px;
+			height: 12px;
+			background-color: var(--accent);
+			border-radius: 2px;
+		}
+
+		.ifc-controls {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 12px;
+		}
+
+		.search-box {
+			flex: 1;
+			position: relative;
+		}
+
+		.search-box input {
+			width: 100%;
+			padding: 6px 10px 6px 32px;
+			background: var(--bg-dark);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			color: var(--text-primary);
+			font-size: 12px;
+			transition: var(--transition);
+		}
+
+		.search-box input:focus {
+			outline: none;
+			border-color: var(--accent);
+			box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+		}
+
+		.search-box::before {
+			content: '🔍';
+			position: absolute;
+			left: 10px;
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 12px;
+			color: var(--text-secondary);
+			pointer-events: none;
+		}
+
+		/* Property Groups */
+		.property-groups {
+			margin-top: 16px;
+			overflow-x: auto;
+			max-width: 100%;
+		}
+
+		.group {
+			background: var(--bg-card);
+			border-radius: var(--radius);
+			border: 1px solid var(--border);
+			margin-bottom: 10px;
+			overflow: hidden;
+		}
+
+		.group-header {
+			padding: 10px 12px;
+			background: rgba(63, 74, 92, 0.3);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			cursor: pointer;
+			transition: var(--transition);
+		}
+
+		.group-header:hover {
+			background: rgba(63, 74, 92, 0.5);
+		}
+
+		.group-header h3 {
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--text-primary);
+		}
+
+		.group-badge {
+			background: var(--accent);
+			color: white;
+			font-size: 10px;
+			padding: 2px 6px;
+			border-radius: 10px;
+			font-weight: 600;
+		}
+
+		.group-content {
+			padding: 0;
+			max-height: 0;
+			overflow: hidden;
+			transition: max-height 0.3s ease;
+		}
+
+		.group.expanded .group-content {
+			max-height: 2000px;
+		}
+
+		/* Property Table */
+		.property-table {
+			width: 100%;
+			border-collapse: collapse;
+			font-size: 12px;
+		}
+
+		.property-table thead {
+			background: rgba(0, 0, 0, 0.2);
+			border-bottom: 2px solid var(--border);
+		}
+
+		.property-table th {
+			padding: 8px 10px;
+			text-align: left;
+			font-weight: 600;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			font-size: 11px;
+			letter-spacing: 0.05em;
+		}
+
+		.property-table tbody tr {
+			border-bottom: 1px solid rgba(63, 74, 92, 0.3);
+			transition: var(--transition);
+		}
+
+		.property-table tbody tr:hover {
+			background: var(--hover);
+		}
+
+		.property-table td {
+			padding: 8px 10px;
+			vertical-align: top;
+		}
+
+		.property-name {
+			font-weight: 500;
+			color: var(--text-primary);
+			min-width: 140px;
+		}
+
+		.property-value {
+			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+			color: var(--accent);
+			word-break: break-word;
+			max-width: 200px;
+		}
+
+		.property-type {
+			color: var(--text-secondary);
+			font-style: italic;
+			font-size: 11px;
+		}
+
+		.property-unit {
+			color: var(--success);
+			font-size: 11px;
+		}
+
+		/* Empty & Loading States */
+		.empty-state, .loading-state {
+			text-align: center;
+			padding: 30px 20px;
+			color: var(--text-secondary);
+		}
+
+		.empty-state h3, .loading-state h3 {
+			color: var(--text-secondary);
+			margin-bottom: 8px;
+		}
+
+		/* Warning Notification */
+		.warning-notice {
+			background: rgba(245, 158, 11, 0.1);
+			border: 1px solid var(--warning);
+			border-radius: var(--radius);
+			padding: 8px 12px;
+			margin: 10px 0;
+			color: var(--warning);
+			font-size: 12px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.warning-notice::before {
+			content: '⚠️';
+			font-size: 14px;
+		}
+
+		/* Error Notification */
+		.error-notice {
+			background: rgba(239, 68, 68, 0.1);
+			border: 1px solid var(--error);
+			border-radius: var(--radius);
+			padding: 8px 12px;
+			margin: 10px 0;
+			color: var(--error);
+			font-size: 12px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.error-notice::before {
+			content: '❌';
+			font-size: 14px;
+		}
+
+		/* 隐藏类 */
+		.hidden {
+			display: none !important;
+		}
+
+		.fade-in {
+			animation: fadeIn 0.3s ease;
+		}
+
+		@keyframes fadeIn {
+			from { opacity: 0; }
+			to { opacity: 1; }
+		}
+
+		/* 响应式 */
+		@media (max-width: 500px) {
+			.guid-type-container {
+				grid-template-columns: 1fr;
+			}
+			
+			.no-selection-message {
+				grid-column: 1;
+			}
+			
+			.controls, .ifc-controls {
+				flex-wrap: wrap;
+			}
+			
+			button {
+				flex: 0 0 calc(50% - 4px);
+			}
+			
+			.property-table {
+				display: block;
+				overflow-x: auto;
+			}
+		}
+	</style>
+</head>
+<body class="state-no-selection">
+	<!-- 第一组信息：标题和版本号 -->
+	<div class="group-1">
+		<div class="plugin-title" id="version-display">HBIM构件信息输入工具 (V0.0.0.0)</div>
+		<div class="version-display">基于ArchiCAD API Development Kit 29.3100</div>
+	</div>
+
+	<!-- 第二组信息：GUID和TYPE显示 -->
+	<div class="group-2">
+		<h2>构件标识</h2>
+		<div class="guid-type-container">
+			<div class="guid-item">
+				<div class="guid-label">GUID</div>
+				<div id="summary-guid" class="guid-value">{GUID}</div>
+			</div>
+			<div class="type-item">
+				<div class="type-label">TYPE</div>
+				<div id="summary-type" class="type-value">{Element Type}</div>
+			</div>
+			<div class="no-selection-message" id="no-selection-message">未选择构件</div>
+		</div>
+	</div>
+
+	<!-- 第三组信息：构件信息填写界面和照片功能 -->
+	<div class="group-3">
+		<h2>构件信息 <span id="componentinfo-unsaved-indicator" class="unsaved-indicator hidden">*</span></h2>
+		
+		<!-- 状态2消息：已选择构件无信息 -->
+		<div class="no-info-message" id="no-info-message">
+			请填写构件编号和照片描述信息
+		</div>
+		
+		<!-- 状态3内容：已选择构件有信息 -->
+		<div class="has-info-content">
+			<!-- 构件编号输入框 -->
+			<div class="form-group">
+				<label class="form-label" for="component-id">构件编号</label>
+				<input type="text" id="component-id" class="form-input" placeholder="请填写构件编号" disabled>
+			</div>
+			
+			<!-- 照片描述输入框 -->
+			<div class="form-group">
+				<label class="form-label" for="photo-description">照片描述</label>
+				<input type="text" id="photo-description" class="form-input" placeholder="请输入照片描述" disabled>
+			</div>
+			
+			<!-- 照片预览 -->
+			<div class="form-group">
+				<label class="form-label">照片预览</label>
+				<div class="photo-preview-container">
+					<div class="photo-preview">
+						<div class="photo-preview-placeholder">未选择照片</div>
+						<img id="photo-display" src="" alt="Photo preview" class="hidden">
+					</div>
+					<div class="photo-navigation hidden">
+						<button id="prev-photo-btn" class="photo-nav-btn" disabled>‹</button>
+						<span id="photo-index" class="photo-index">0 / 0</span>
+						<button id="next-photo-btn" class="photo-nav-btn" disabled>›</button>
+					</div>
+					<!-- 调试信息显示区域 -->
+					<div id="photo-debug-info" class="photo-debug-info hidden">
+						<div class="debug-header">调试信息 (F12控制台不可用时使用):</div>
+						<div class="debug-content"></div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- 控制按钮 -->
+			<div class="controls">
+				<button id="select-photos-btn" class="secondary" disabled>选择照片</button>
+				<button id="view-photos-btn" class="secondary" disabled>查看照片</button>
+				<button id="edit-info-btn">编辑信息</button>
+			</div>
+			
+			<!-- 编辑模式按钮（默认隐藏） -->
+			<div class="edit-mode-buttons hidden">
+				<button id="save-info-btn" class="hidden">保存</button>
+				<button id="cancel-edit-btn" class="secondary hidden">取消编辑</button>
+			</div>
+			
+			<!-- IFC Properties Section -->
+			<div class="ifc-properties-section">
+				<h3>IFC属性</h3>
+				<div class="ifc-controls">
+					<div class="search-box">
+						<input type="text" id="property-search" placeholder="Search properties..." />
+					</div>
+					<button id="refresh-btn" title="Refresh properties">
+						↻ Refresh
+					</button>
+					<button id="view-ifc-properties-btn">查看构件的IFC属性</button>
+				</div>
+
+				<div id="loading-state" class="loading-state hidden">
+					<h3>Loading IFC properties...</h3>
+					<p>Please wait while fetching property data.</p>
+				</div>
+
+				<div id="empty-state" class="empty-state hidden">
+					<h3>No element selected</h3>
+					<p>Select an element in Archicad to view its IFC properties.</p>
+				</div>
+				
+				<div id="no-match-state" class="empty-state hidden">
+					<h3>No matching properties</h3>
+					<p>Try adjusting your search to find what you're looking for.</p>
+				</div>
+				
+				<div id="error-state" class="error-notice hidden">
+					<h3>Error loading IFC properties</h3>
+					<p id="error-message">An unexpected error occurred while fetching IFC properties.</p>
+					<button id="retry-btn" class="secondary" style="margin-top: 8px;">Retry</button>
+				</div>
+
+				<div id="property-groups" class="property-groups">
+					<!-- Property groups will be inserted here by JavaScript -->
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- JavaScript桥接状态显示 -->
+	<div style="font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border);">
+		<span id="bridge-status" style="color: #ef4444;">(桥接检测中...)</span>
+	</div>
+
+	
+</body>
+</html>
+    </div>
+    
+    <script>
+        // 注入模拟ACAPI对象
+        console.log("开始注入模拟ACAPI对象...");
+        
+        // 模拟ACAPI对象
+        window.ACAPI = {
+            // 1. GetSelectedElements
+            GetSelectedElements: function() {
+                console.log("ACAPI.GetSelectedElements called");
+                return [
+                    ["{12345678-1234-1234-1234-123456789012}", "Wall", "ID-001"],
+                    ["{87654321-4321-4321-4321-210987654321}", "Door", "ID-002"]
+                ];
+            },
+            
+            // 2. GetPluginVersion
+            GetPluginVersion: function() {
+                console.log("ACAPI.GetPluginVersion called");
+                return "0.2.12.47";
+            },
+            
+            // 3. GetAllIFCProperties
+            GetAllIFCProperties: function(elementGuid) {
+                console.log("ACAPI.GetAllIFCProperties called with:", elementGuid);
+                return [
+                    ["IfcWall", "Name", "Wall-01", "IfcLabel", ""],
+                    ["IfcWall", "Description", "Exterior wall", "IfcText", ""]
+                ];
+            },
+            
+            // 4. GetCachedIFCProperties
+            GetCachedIFCProperties: function(elementGuid) {
+                console.log("ACAPI.GetCachedIFCProperties called with:", elementGuid);
+                return [
+                    ["IfcWall", "Name", "Wall-01", "IfcLabel", ""],
+                    ["IfcWall", "Description", "Exterior wall", "IfcText", ""]
+                ];
+            },
+            
+            // 5. ComponentInfo_GetComponentInfo
+            ComponentInfo_GetComponentInfo: function(elementGuid) {
+                console.log("ACAPI.ComponentInfo_GetComponentInfo called with:", elementGuid);
+                return {
+                    componentId: "W-001",
+                    photoDesc: "West facade wall",
+                    photoPaths: ["_构件照片_12345678/wall_01.jpg", "_构件照片_12345678/wall_02.jpg"],
+                    globalId: "12345678-1234-1234-1234-123456789012",
+                    folderName: "12345678-1234-1234-1234-123456789012"
+                };
+            },
+            
+            // 6. ComponentInfo_SaveComponentInfo
+            ComponentInfo_SaveComponentInfo: function(params) {
+                console.log("ACAPI.ComponentInfo_SaveComponentInfo called with:", params);
+                return true;
+            },
+            
+            // 7. TestBridge
+            TestBridge: function(message) {
+                console.log("ACAPI.TestBridge called with:", message);
+                return true;
+            },
+            
+            // 8. LogDebug
+            LogDebug: function(message) {
+                console.log("ACAPI.LogDebug called with:", message);
+                return true;
+            },
+            
+            // 9. ComponentInfo_SelectPhotos
+            ComponentInfo_SelectPhotos: function(elementGuid) {
+                console.log("ACAPI.ComponentInfo_SelectPhotos called with:", elementGuid);
+                return ["/path/to/photo1.jpg", "/path/to/photo2.jpg"];
+            },
+            
+            // 10. ComponentInfo_GetPhotoFullPath
+            ComponentInfo_GetPhotoFullPath: function(relPath) {
+                console.log("ACAPI.ComponentInfo_GetPhotoFullPath called with:", relPath);
+                return "/full/path/to/project/_构件照片_12345678/photo.jpg";
+            },
+            
+            // 11. ComponentInfo_ViewPhotos
+            ComponentInfo_ViewPhotos: function(params) {
+                console.log("ACAPI.ComponentInfo_ViewPhotos called with:", params);
+                return true;
+            },
+            
+            // 12. ComponentInfo_GetPhotoBase64
+            ComponentInfo_GetPhotoBase64: function(relPath) {
+                console.log("ACAPI.ComponentInfo_GetPhotoBase64 called with:", relPath);
+                // Return a small base64 encoded image (1x1 pixel transparent PNG)
+                return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+            },
+            
+            // 13. ComponentInfo_SetEditMode
+            ComponentInfo_SetEditMode: function(editMode) {
+                console.log("ACAPI.ComponentInfo_SetEditMode called with:", editMode);
+                return true;
+            },
+            
+            // 14. ComponentInfo_SetUnsavedChanges
+            ComponentInfo_SetUnsavedChanges: function(hasChanges) {
+                console.log("ACAPI.ComponentInfo_SetUnsavedChanges called with:", hasChanges);
+                return true;
+            }
+        };
+        
+        console.log("模拟ACAPI对象已注入，包含14个函数");
+        
+        // 测试函数
+        function testACAPIFunctions() {
+            const results = [];
+            const testResultsDiv = document.getElementById('test-results');
+            
+            // 测试每个函数
+            const functionTests = [
+                { name: 'GetSelectedElements', test: () => ACAPI.GetSelectedElements() },
+                { name: 'GetPluginVersion', test: () => ACAPI.GetPluginVersion() },
+                { name: 'GetAllIFCProperties', test: () => ACAPI.GetAllIFCProperties('{test-guid}') },
+                { name: 'GetCachedIFCProperties', test: () => ACAPI.GetCachedIFCProperties('{test-guid}') },
+                { name: 'ComponentInfo_GetComponentInfo', test: () => ACAPI.ComponentInfo_GetComponentInfo('{test-guid}') },
+                { name: 'ComponentInfo_SaveComponentInfo', test: () => ACAPI.ComponentInfo_SaveComponentInfo(['guid', 'id', 'desc', []]) },
+                { name: 'TestBridge', test: () => ACAPI.TestBridge('test message') },
+                { name: 'LogDebug', test: () => ACAPI.LogDebug('debug message') },
+                { name: 'ComponentInfo_SelectPhotos', test: () => ACAPI.ComponentInfo_SelectPhotos('{test-guid}') },
+                { name: 'ComponentInfo_GetPhotoFullPath', test: () => ACAPI.ComponentInfo_GetPhotoFullPath('path/to/photo.jpg') },
+                { name: 'ComponentInfo_ViewPhotos', test: () => ACAPI.ComponentInfo_ViewPhotos(['guid', 'path']) },
+                { name: 'ComponentInfo_GetPhotoBase64', test: () => ACAPI.ComponentInfo_GetPhotoBase64('path/to/photo.jpg') },
+                { name: 'ComponentInfo_SetEditMode', test: () => ACAPI.ComponentInfo_SetEditMode(true) },
+                { name: 'ComponentInfo_SetUnsavedChanges', test: () => ACAPI.ComponentInfo_SetUnsavedChanges(true) }
+            ];
+            
+            functionTests.forEach((funcTest, index) => {
+                try {
+                    const result = funcTest.test();
+                    console.log(`✓ 函数 ${funcTest.name} 调用成功: `, result);
+                    results.push({ name: funcTest.name, success: true, result: result });
+                    
+                    const div = document.createElement('div');
+                    div.className = 'test-result success';
+                    div.innerHTML = `<strong>✓ ${funcTest.name}</strong>: 调用成功 (结果类型: ${typeof result})`;
+                    testResultsDiv.appendChild(div);
+                } catch (error) {
+                    console.error(`✗ 函数 ${funcTest.name} 调用失败: `, error);
+                    results.push({ name: funcTest.name, success: false, error: error.message });
+                    
+                    const div = document.createElement('div');
+                    div.className = 'test-result error';
+                    div.innerHTML = `<strong>✗ ${funcTest.name}</strong>: 调用失败 - ${error.message}`;
+                    testResultsDiv.appendChild(div);
+                }
+            });
+            
+            // 总结
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = successCount === totalCount ? 'test-result success' : 'test-result warning';
+            summaryDiv.innerHTML = `<h3>测试总结</h3>
+                <p>总共测试函数: ${totalCount}</p>
+                <p>成功: ${successCount}</p>
+                <p>失败: ${totalCount - successCount}</p>
+                <p>成功率: ${Math.round((successCount / totalCount) * 100)}%</p>`;
+            testResultsDiv.appendChild(summaryDiv);
+            
+            return results;
+        }
+        
+        // 页面加载完成后运行测试
+        window.addEventListener('load', function() {
+            console.log("页面加载完成，开始测试...");
+            setTimeout(() => {
+                const results = testACAPIFunctions();
+                console.log("测试完成:", results);
+                
+                // 将结果保存到全局变量供外部访问
+                window.e2eTestResults = results;
+                
+                // 触发截图信号
+                window.dispatchEvent(new CustomEvent('e2e-test-complete', { 
+                    detail: { results: results } 
+                }));
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
