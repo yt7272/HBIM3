@@ -1,6 +1,6 @@
 # Merged Plugin (NewPlugin) — AI Agent Guide
 
-**Generated:** 2025-02-12  
+**Generated:** 2026-02-13  
 **Plugin Version:** 0.month.day.build (date-based auto-versioning)  
 **ArchiCAD API:** Development Kit 29.3100
 
@@ -33,7 +33,7 @@ NewPlugin/
 | Plugin entry points | `PluginMain.cpp` | Combined `CheckEnvironment`, `RegisterInterface`, `Initialize`, `FreeData` |
 | Component property logic | `ComponentInfo.cpp/hpp` | `EnsurePropertyGroupAndDefinitions`, `CopyPhotosForComponent` |
 | IFC property utilities | `PropertyUtils.cpp/hpp` | Basic IFC property reading (no caching per guardrails) |
-| HTML palette | `PluginPalette.cpp/hpp` | Browser interface with 11 ACAPI JavaScript functions |
+| HTML palette | `PluginPalette.cpp/hpp` | Browser interface with 14 ACAPI JavaScript functions |
 | JavaScript bridge | `PluginPalette.cpp` | `ACAPI` object with `GetSelectedElements`, `GetComponentProperties`, etc. |
 | Build configuration | `CMakeLists.txt` | Date-based versioning (0.month.day.build) |
 | Bundle validation | `check_bundle.sh` | Post-build validation, fails if bundle incomplete |
@@ -51,7 +51,7 @@ NewPlugin/
 - **Date-based versioning**: `0.month.day.build` format, auto-incremented by `build.sh`
 - **Bundle integrity**: `check_bundle.sh` validates bundle completeness (fails build if missing files)
 - **HTML interface**: Pure HTML (no hybrid DG), industrial dark theme, tabs for Component/IFC
-- **JavaScript bridge**: 11 ACAPI functions exposed for bidirectional communication
+- **JavaScript bridge**: 14 ACAPI functions exposed for bidirectional communication
 - **Edit mode management**: Visual (*) indicator for unsaved changes, disable auto-save on element switch
 - **Chinese support**: Chinese property names (`构件编号`, `照片说明`), Unicode handling with `GS::UniString`
 
@@ -97,15 +97,43 @@ make AddOnResources
 ## TESTING
 **JavaScript tests (in ArchiCAD browser console F12):**
 ```javascript
-// Merged plugin tests
-window.testMergedPlugin.runAllTests();
+// Check ACAPI object availability
+console.log("ACAPI available:", typeof ACAPI !== 'undefined');
+console.log("ACAPI functions:", Object.keys(ACAPI || {}));
 
-// ComponentInfo tests
-window.testComponentInfo.runAllTests();
+// Test individual functions
+try {
+    const version = ACAPI.GetPluginVersion();
+    console.log("Plugin version:", version);
+} catch (err) {
+    console.error("GetPluginVersion failed:", err);
+}
 
-// IFC property tests  
-window.testIFCProperties.runAllTests();
+// IFC property tests (if testIFCProperties is available)
+if (typeof window.testIFCProperties !== 'undefined') {
+    window.testIFCProperties.runAllTests();
+}
 ```
+
+**Standalone testing:**
+```bash
+# JavaScript unit tests (Jest)
+npm test
+
+# End-to-end testing
+node test-e2e.js
+
+# UI state testing
+node test-ui-states.js
+
+# Bundle validation
+./check_bundle.sh
+
+# HTML interface validation
+node ../validate_merged_interface.js
+```
+
+**Detailed testing guide:** See [TESTING.md](TESTING.md) for comprehensive testing instructions.
 
 **Bundle validation:**
 ```bash

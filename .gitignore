@@ -41,3 +41,13 @@ __pycache__/
 
 # Optional: 若不想把 API 开发包纳入仓库，可取消下一行注释（需自行下载 SDK）
 API.Development.Kit.MAC.29.3100/
+
+# Test screenshots
+*.png
+
+# Plugin bundles (directory)
+*.bundle
+*.bundle/
+
+# Generated validation reports
+validation_report.txt

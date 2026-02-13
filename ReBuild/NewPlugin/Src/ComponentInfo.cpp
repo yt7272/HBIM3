@@ -360,9 +360,10 @@ GSErrCode ComponentInfo::GetComponentPhotoFolder (const API_Guid& elemGuid, IO::
 	GSErrCode err = GetProjectPhotoFolder (photoRootLoc, outProjectFolderLoc, outProjectName);
 	if (err != NoError) return err;
 
-	GS::UniString guidFolderName = GuidToFolderName (elemGuid);
+	GS::UniString folderName = GlobalIdToFolderName (elemGuid);
+	if (folderName.IsEmpty ()) return APIERR_BADPROPERTY;
 	outComponentPhotoFolder = photoRootLoc;
-	err = outComponentPhotoFolder.AppendToLocal (IO::Name (guidFolderName));
+	err = outComponentPhotoFolder.AppendToLocal (IO::Name (folderName));
 	if (err != NoError) return err;
 
 	err = IO::fileSystem.CreateFolder (outComponentPhotoFolder);
@@ -377,8 +378,8 @@ GSErrCode ComponentInfo::CopyPhotosForComponent (const API_Guid& elemGuid, const
 	GSErrCode err = GetComponentPhotoFolder (elemGuid, componentPhotoFolder, projectFolderLoc, projectName);
 	if (err != NoError) return err;
 
-	GS::UniString guidFolderName = GuidToFolderName (elemGuid);
-	GS::UniString prefix = projectName + kPhotoFolderSuffix + "/" + guidFolderName + "/";
+	GS::UniString folderName = GlobalIdToFolderName (elemGuid);
+	GS::UniString prefix = projectName + kPhotoFolderSuffix + "/" + folderName + "/";
 	outRelPaths.Clear ();
 
 	for (UInt32 i = 0; i < sourceLocs.GetSize (); ++i) {
@@ -875,8 +876,31 @@ void ComponentInfo::RunViewComponentPhotosCommand ()
  		identifierParts.Push ("未知元素");
  	}
  	
- 	// 2. 尝试获取IFC类型（稍后实现）
- 	// TODO: 使用IFC API获取IFC类型
+	// 2. 尝试获取IFC类型
+	GS::UniString ifcType;
+	try {
+		IFCAPI::ObjectAccessor objectAccessor = IFCAPI::GetObjectAccessor ();
+		
+		API_Elem_Head elemHeadForIFC = {};
+		elemHeadForIFC.guid = elemGuid;
+		GSErrCode errIFC = ACAPI_Element_GetHeader (&elemHeadForIFC);
+		if (errIFC == NoError) {
+			auto objectIDResult = objectAccessor.CreateElementObjectID (elemHeadForIFC);
+			if (objectIDResult.IsOk ()) {
+				IFCAPI::ObjectID objectID = objectIDResult.Unwrap ();
+				auto ifcTypeResult = objectAccessor.GetIFCType (objectID);
+				if (ifcTypeResult.IsOk ()) {
+					ifcType = ifcTypeResult.Unwrap ();
+				}
+			}
+		}
+	} catch (...) {
+		// 忽略异常
+	}
+	
+	if (!ifcType.IsEmpty ()) {
+		identifierParts.Push ("IFC类型: " + ifcType);
+	}
  	
  	// 3. 获取分类信息
  	GS::UniString classificationInfo, classificationId;
@@ -1106,9 +1130,9 @@ GSErrCode ComponentInfo::GetComponentInfo (API_Guid elemGuid, ComponentInfoData&
     err = GetPhotoPathsFromElement (elemGuid, guids.photoPathsGuid, outInfo.photoPaths);
     if (err != NoError) outInfo.photoPaths.Clear ();
     
-    // Get globalId property value (IFC) - placeholder
-    outInfo.globalId = "";
-    outInfo.folderName = GuidToFolderName (elemGuid);
+    // Get IFC GlobalId property
+    outInfo.globalId = GetGlobalIdPropertyValue (elemGuid);
+    outInfo.folderName = GlobalIdToFolderName (elemGuid);
     
     return NoError;
 }
@@ -1125,17 +1149,55 @@ GSErrCode ComponentInfo::SaveComponentInfo (API_Guid elemGuid, const ComponentIn
 }
 
 
-// GlobalId property retrieval (IFC) - placeholder
+// GlobalId property retrieval (IFC) - implementation
 GS::UniString ComponentInfo::GetGlobalIdPropertyValue (const API_Guid& elementGuid)
 {
-    // TODO: Implement IFC GlobalId retrieval
-    return "";
+    GS::UniString globalId;
+    
+    try {
+        IFCAPI::ObjectAccessor objectAccessor = IFCAPI::GetObjectAccessor ();
+        
+        API_Elem_Head elemHead{};
+        elemHead.guid = elementGuid;
+        
+        GSErrCode err = ACAPI_Element_GetHeader (&elemHead);
+        if (err != NoError)
+            return globalId;
+        
+        auto objectIDResult = objectAccessor.CreateElementObjectID (elemHead);
+        if (objectIDResult.IsErr ())
+            return globalId;
+        
+        IFCAPI::ObjectID objectID = objectIDResult.Unwrap ();
+        IFCAPI::PropertyAccessor propertyAccessor (objectID);
+        
+        // Get IFC attributes
+        auto attributesResult = propertyAccessor.GetAttributes ();
+        if (attributesResult.IsOk ()) {
+            std::vector<IFCAPI::Attribute> attributes = attributesResult.Unwrap ();
+            for (const IFCAPI::Attribute& attribute : attributes) {
+                if (attribute.GetName ().IsEqual ("GlobalId", GS::CaseInsensitive)) {
+                    auto value = attribute.GetValue ();
+                    if (value.has_value ()) {
+                        globalId = value.value ();
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    catch (...) {
+        // Handle any unexpected exceptions
+    }
+    
+    return globalId; // Returns empty string if GlobalId not found
 }
 
 GS::UniString ComponentInfo::GlobalIdToFolderName (const API_Guid& elementGuid)
 {
-    // Use element GUID for folder naming (same as GuidToFolderName)
-    return GuidToFolderName (elementGuid);
+    GS::UniString globalId = GetGlobalIdPropertyValue (elementGuid);
+    // Empty string indicates no GlobalId (photo functionality disabled per guardrail)
+    return globalId;
 }
 
 

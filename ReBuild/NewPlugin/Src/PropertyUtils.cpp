@@ -18,12 +18,7 @@
 #include "APICommon.h"
 #include "MDIDs_Public.h"
 
-// C++ standard library headers
-#include <unordered_map>
-#include <list>
-#include <chrono>
-#include <mutex>
-#include <algorithm>
+// C++ standard library headers (仅限必要)
 #include <variant>
 #include <optional>
 
@@ -193,175 +188,7 @@ namespace {
 		}
 	}
 	
-	// ============================================================================
-	// 缓存实现
-	// ============================================================================
-	
-	// API_Guid哈希函数
-	struct API_GuidHash {
-		size_t operator()(const API_Guid& guid) const {
-			// 使用内存布局创建哈希值
-			// API_Guid通常包含多个32位整数
-			size_t hash = 0;
-			const unsigned char* bytes = reinterpret_cast<const unsigned char*>(&guid);
-			for (size_t i = 0; i < sizeof(API_Guid); ++i) {
-				hash = hash * 31 + bytes[i];
-			}
-			return hash;
-		}
-	};
-	
-	// API_Guid相等比较
-	struct API_GuidEqual {
-		bool operator()(const API_Guid& a, const API_Guid& b) const {
-			return a == b;
-		}
-	};
-	
-	// LRU缓存实现
-	class IFCPropertyCache {
-	private:
-		struct CacheEntry {
-			GS::Array<PropertyUtils::PropertyInfo> properties;
-			std::chrono::steady_clock::time_point timestamp;
-			std::list<API_Guid>::iterator lruIterator;
-		};
-		
-		// 缓存大小限制
-		static constexpr size_t MAX_CACHE_SIZE = 100;
-		
-		// 缓存数据结构
-		std::unordered_map<API_Guid, CacheEntry, API_GuidHash, API_GuidEqual> cacheMap;
-		std::list<API_Guid> lruList; // 最近最少使用顺序
-		
-		// 缓存统计
-		size_t hitCount = 0;
-		size_t missCount = 0;
-		size_t evictionCount = 0;
-		
-		// 线程安全
-		mutable std::mutex cacheMutex;
-		
-		// 私有构造函数（单例）
-		IFCPropertyCache() = default;
-		
-	public:
-		// 获取单例实例
-		static IFCPropertyCache& GetInstance() {
-			static IFCPropertyCache instance;
-			return instance;
-		}
-		
-		// 获取缓存属性
-		GS::Array<PropertyUtils::PropertyInfo> Get(const API_Guid& elementGuid, bool& foundInCache) {
-			std::lock_guard<std::mutex> lock(cacheMutex);
-			
-			auto it = cacheMap.find(elementGuid);
-			if (it != cacheMap.end()) {
-				// 命中缓存，更新LRU顺序
-				CacheEntry& entry = it->second;
-				lruList.erase(entry.lruIterator);
-				lruList.push_front(elementGuid);
-				entry.lruIterator = lruList.begin();
-				
-				hitCount++;
-				foundInCache = true;
-				return entry.properties;
-			}
-			
-			missCount++;
-			foundInCache = false;
-			return GS::Array<PropertyUtils::PropertyInfo>();
-		}
-		
-		// 设置缓存属性
-		void Set(const API_Guid& elementGuid, const GS::Array<PropertyUtils::PropertyInfo>& properties) {
-			std::lock_guard<std::mutex> lock(cacheMutex);
-			
-			// 检查是否已存在
-			auto it = cacheMap.find(elementGuid);
-			if (it != cacheMap.end()) {
-				// 更新现有条目
-				CacheEntry& entry = it->second;
-				lruList.erase(entry.lruIterator);
-				lruList.push_front(elementGuid);
-				entry.lruIterator = lruList.begin();
-				entry.properties = properties;
-				entry.timestamp = std::chrono::steady_clock::now();
-			} else {
-				// 添加新条目，检查是否超过大小限制
-				if (cacheMap.size() >= MAX_CACHE_SIZE) {
-					// 移除LRU条目
-					API_Guid lruGuid = lruList.back();
-					lruList.pop_back();
-					cacheMap.erase(lruGuid);
-					evictionCount++;
-				}
-				
-				// 添加新条目
-				lruList.push_front(elementGuid);
-				CacheEntry entry;
-				entry.properties = properties;
-				entry.timestamp = std::chrono::steady_clock::now();
-				entry.lruIterator = lruList.begin();
-				cacheMap[elementGuid] = entry;
-			}
-		}
-		
-		// 清除指定元素的缓存
-		void Clear(const API_Guid& elementGuid) {
-			std::lock_guard<std::mutex> lock(cacheMutex);
-			
-			auto it = cacheMap.find(elementGuid);
-			if (it != cacheMap.end()) {
-				lruList.erase(it->second.lruIterator);
-				cacheMap.erase(it);
-			}
-		}
-		
-		// 清除所有缓存
-		void ClearAll() {
-			std::lock_guard<std::mutex> lock(cacheMutex);
-			cacheMap.clear();
-			lruList.clear();
-		}
-		
-		// 获取缓存统计信息
-		struct CacheStats {
-			size_t size;
-			size_t maxSize;
-			size_t hitCount;
-			size_t missCount;
-			size_t evictionCount;
-			double hitRate;
-		};
-		
-		CacheStats GetStats() const {
-			std::lock_guard<std::mutex> lock(cacheMutex);
-			
-			CacheStats stats;
-			stats.size = cacheMap.size();
-			stats.maxSize = MAX_CACHE_SIZE;
-			stats.hitCount = hitCount;
-			stats.missCount = missCount;
-			stats.evictionCount = evictionCount;
-			
-			size_t totalAccess = hitCount + missCount;
-			if (totalAccess > 0) {
-				stats.hitRate = static_cast<double>(hitCount) / totalAccess * 100.0;
-			} else {
-				stats.hitRate = 0.0;
-			}
-			
-			return stats;
-		}
-		
-		// 获取缓存大小
-		size_t GetSize() const {
-			std::lock_guard<std::mutex> lock(cacheMutex);
-			return cacheMap.size();
-		}
-	};
+	// 缓存已移除 - 符合防护栏要求 NO caching system
 	
 } // anonymous namespace
 
@@ -562,38 +389,14 @@ GS::Array<PropertyUtils::PropertyInfo> PropertyUtils::GetAllIFCPropertiesForElem
 	return propertyInfos;
 }
 
-GS::Array<PropertyUtils::PropertyInfo> PropertyUtils::GetCachedIFCPropertiesForElement (const API_Guid& elementGuid, bool forceRefresh)
+GS::Array<PropertyUtils::PropertyInfo> PropertyUtils::GetIFCPropertiesForElement (const API_Guid& elementGuid, bool forceRefresh)
 {
-	// 如果强制刷新，先清除缓存
-	if (forceRefresh) {
-		IFCPropertyCache::GetInstance().Clear(elementGuid);
-	}
-	
-	// 尝试从缓存获取
-	bool foundInCache = false;
-	GS::Array<PropertyInfo> properties = IFCPropertyCache::GetInstance().Get(elementGuid, foundInCache);
-	
-	if (foundInCache) {
-		return properties;
-	}
-	
-	// 缓存未命中，计算属性
-	properties = GetAllIFCPropertiesForElement(elementGuid);
-	
-	// 存入缓存（如果属性不为空）
-	if (!properties.IsEmpty()) {
-		IFCPropertyCache::GetInstance().Set(elementGuid, properties);
-	}
-	
-	return properties;
+	// 基本实现：直接调用 GetAllIFCPropertiesForElement，无缓存
+	// 符合防护栏要求：NO caching system
+	(void)forceRefresh; // 未使用参数
+	return GetAllIFCPropertiesForElement(elementGuid);
 }
 
-void PropertyUtils::ClearIFCPropertyCache ()
-{
-	IFCPropertyCache::GetInstance().ClearAll();
-}
 
-UInt32 PropertyUtils::GetIFCPropertyCacheSize ()
-{
-	return static_cast<UInt32>(IFCPropertyCache::GetInstance().GetSize());
-}
+
+

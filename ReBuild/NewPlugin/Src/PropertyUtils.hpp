@@ -26,9 +26,9 @@ struct PropertyInfo {
 	int GetAddOnVersionBuild ();
 
 	GS::Array<PropertyInfo> GetAllIFCPropertiesForElement (const API_Guid& elementGuid);
-	GS::Array<PropertyInfo> GetCachedIFCPropertiesForElement (const API_Guid& elementGuid, bool forceRefresh = false);
-	void ClearIFCPropertyCache ();
-	UInt32 GetIFCPropertyCacheSize ();
+	GS::Array<PropertyInfo> GetIFCPropertiesForElement (const API_Guid& elementGuid, bool forceRefresh = false);
+
+
 }
 
 #endif

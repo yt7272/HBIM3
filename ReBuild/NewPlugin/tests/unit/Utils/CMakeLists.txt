@@ -37,4 +37,7 @@ target_link_libraries(UtilsTest
 # Link with GS libraries (ArchiCAD API)
 link_gs_libraries(UtilsTest)
 
+# Allow undefined symbols (plugin entry points not needed for tests)
+target_link_options(UtilsTest PRIVATE "LINKER:-undefined,dynamic_lookup")
+
 gtest_discover_tests(UtilsTest)

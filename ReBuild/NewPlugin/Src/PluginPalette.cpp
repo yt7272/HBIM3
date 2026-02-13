@@ -275,11 +275,11 @@ void PluginPalette::InitializeJavaScriptBridge ()
 	jsACAPI->AddItem (new JS::Function ("GetCachedIFCProperties", [] (GS::Ref<JS::Base> param) {
 		GS::UniString elementGuidStr = GetStringFromJavaScriptVariable (param);
 		API_Guid elementGuid = APIGuidFromString (elementGuidStr.ToCStr ().Get ());
-		GS::Array<PropertyUtils::PropertyInfo> properties = PropertyUtils::GetCachedIFCPropertiesForElement (elementGuid, false);
+		GS::Array<PropertyUtils::PropertyInfo> properties = PropertyUtils::GetIFCPropertiesForElement (elementGuid, false);
 		return ConvertToJavaScriptVariable (properties);
 	}));
 
-	// TODO: Add more JavaScript bridge functions for component info and photo management
+
 	
 	// Component Info JavaScript bridge functions
 	jsACAPI->AddItem (new JS::Function ("ComponentInfo_GetComponentInfo", [] (GS::Ref<JS::Base> param) {

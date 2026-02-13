@@ -39,4 +39,7 @@ target_link_libraries(ComponentInfoTest
 # Link with all GS libraries (same as main plugin)
 link_gs_libraries(ComponentInfoTest)
 
+# Allow undefined symbols (plugin entry points not needed for tests)
+target_link_options(ComponentInfoTest PRIVATE "LINKER:-undefined,dynamic_lookup")
+
 gtest_discover_tests(ComponentInfoTest)
