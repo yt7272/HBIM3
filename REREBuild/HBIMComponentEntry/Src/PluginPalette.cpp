@@ -934,23 +934,17 @@ void PluginPalette::PanelCloseRequested (const DG::PanelCloseRequestEvent& ev, b
 
 void PluginPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
 {
-	ACAPI_WriteReport("HBIMComponentEntry: ButtonClicked 被调用", false);
-	
 	if (ev.GetSource() == &hbimActionButton) {
-		ACAPI_WriteReport("HBIMComponentEntry: hbimActionButton 被点击", false);
 		if (isHBIMEditMode) {
-			ACAPI_WriteReport("HBIMComponentEntry: 保存按钮点击", false);
 			ExitHBIMEditMode(true);
 		} else {
 			if (currentElemGuid == APINULLGuid) {
 				DG::InformationAlert("提示", "请先选择一个构件", "确定");
 				return;
 			}
-			ACAPI_WriteReport("HBIMComponentEntry: 添加/编辑按钮点击，当前 isHBIMEditMode=%d, hasHBIMProperties=%d", false, isHBIMEditMode ? 1 : 0, hasHBIMProperties ? 1 : 0);
 			EnterHBIMEditMode();
 		}
 	} else if (ev.GetSource() == &hbimCancelButton) {
-		ACAPI_WriteReport("HBIMComponentEntry: hbimCancelButton 被点击", false);
 		ExitHBIMEditMode(false);
 	}
 }
