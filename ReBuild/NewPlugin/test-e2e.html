@@ -26,6 +26,9 @@
 	<title>HBIM构件信息输入工具</title>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
 	<style type="text/css">
 		/* CSS Variables for Industrial Dark Theme */
 		:root {
@@ -272,7 +275,7 @@
 			display: block;
 			font-size: 12px;
 			color: var(--text-secondary);
-			margin-bottom: 6px;
+			margin-bottom: 8px;
 			font-weight: 500;
 		}
 
@@ -288,9 +291,10 @@
 		}
 
 		.form-input:focus {
-			outline: none;
+			outline: 2px solid var(--accent);
+			outline-offset: 1px;
 			border-color: var(--accent);
-			box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+			box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
 		}
 
 		.form-input:disabled {
@@ -365,6 +369,12 @@
 			opacity: 0.4;
 			cursor: not-allowed;
 		}
+		
+		.photo-nav-btn:focus-visible {
+			outline: 3px solid var(--accent);
+			outline-offset: 3px;
+			box-shadow: 0 0 0 5px rgba(6, 182, 212, 0.3);
+		}
 
 		.photo-index {
 			font-size: 12px;
@@ -434,6 +444,12 @@
 		button:active {
 			transform: translateY(0);
 		}
+		
+		button:focus-visible {
+			outline: 3px solid var(--accent);
+			outline-offset: 3px;
+			box-shadow: 0 0 0 6px rgba(6, 182, 212, 0.3);
+		}
 
 		button.secondary {
 			background: transparent;
@@ -470,7 +486,9 @@
 		.edit-mode-buttons {
 			display: flex;
 			gap: 8px;
-			margin-top: 8px;
+			margin-top: 12px;
+			padding-top: 12px;
+			border-top: 1px solid var(--border);
 		}
 
 		/* IFC属性部分 */
@@ -564,6 +582,12 @@
 
 		.group-header:hover {
 			background: rgba(63, 74, 92, 0.5);
+		}
+		
+		.group-header:focus-visible {
+			outline: 2px solid var(--accent);
+			outline-offset: -2px;
+			background: rgba(63, 74, 92, 0.7);
 		}
 
 		.group-header h3 {
@@ -708,6 +732,19 @@
 		.fade-in {
 			animation: fadeIn 0.3s ease;
 		}
+		
+		/* 屏幕阅读器专用类 */
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
 
 		@keyframes fadeIn {
 			from { opacity: 0; }
@@ -736,136 +773,241 @@
 				display: block;
 				overflow-x: auto;
 			}
+			
+			/* Confirmation dialog styles */
+			.confirmation-dialog {
+				background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				padding: 16px;
+				margin-top: 12px;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			}
+			
+			.confirmation-dialog.hidden {
+				display: none;
+			}
+			
+			.confirmation-content p {
+				margin: 0 0 16px 0;
+				color: var(--text);
+				font-size: 14px;
+				line-height: 1.5;
+			}
+			
+			.confirmation-buttons {
+				display: flex;
+				gap: 8px;
+				justify-content: flex-end;
+			}
+			
+			.confirmation-buttons button {
+				flex: 0 0 auto;
+				min-width: 80px;
+			}
+			
+			/* Edit mode notification styles */
+			.edit-mode-notification {
+				background: linear-gradient(135deg, #3a2c1c 0%, #2d2318 100%);
+				border: 1px solid #d97706;
+				border-radius: 6px;
+				padding: 10px 14px;
+				margin: 12px 0;
+				box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+			}
+			
+			.edit-mode-notification.hidden {
+				display: none;
+			}
+			
+			.notification-content {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+			}
+			
+			.notification-icon {
+				font-size: 16px;
+			}
+			
+			.notification-text {
+				color: #fbbf24;
+				font-size: 13px;
+				line-height: 1.4;
+				flex: 1;
+			}
 		}
 	</style>
 </head>
-<body class="state-no-selection">
+<body class="state-no-selection" role="application" aria-label="HBIM构件信息输入工具">
 	<!-- 第一组信息：标题和版本号 -->
-	<div class="group-1">
-		<div class="plugin-title" id="version-display">HBIM构件信息输入工具 (V0.0.0.0)</div>
-		<div class="version-display">基于ArchiCAD API Development Kit 29.3100</div>
+	<div class="group-1" role="banner" aria-label="插件标题和版本信息">
+		<div class="plugin-title" id="version-display" role="heading" aria-level="1">HBIM构件信息输入工具 (V0.0.0.0)</div>
+		<div class="version-display" aria-label="基于ArchiCAD API Development Kit 29.3100">基于ArchiCAD API Development Kit 29.3100</div>
 	</div>
 
 	<!-- 第二组信息：GUID和TYPE显示 -->
-	<div class="group-2">
-		<h2>构件标识</h2>
-		<div class="guid-type-container">
-			<div class="guid-item">
-				<div class="guid-label">GUID</div>
-				<div id="summary-guid" class="guid-value">{GUID}</div>
+	<div class="group-2" role="region" aria-label="构件标识信息">
+		<h2 id="element-identification-heading">构件标识</h2>
+		<div class="guid-type-container" role="group" aria-labelledby="element-identification-heading">
+			<div class="guid-item" role="region" aria-label="构件全局唯一标识符">
+				<div class="guid-label" id="guid-label">GUID</div>
+				<div id="summary-guid" class="guid-value" role="status" aria-labelledby="guid-label" aria-live="polite">{GUID}</div>
 			</div>
-			<div class="type-item">
-				<div class="type-label">TYPE</div>
-				<div id="summary-type" class="type-value">{Element Type}</div>
+			<div class="type-item" role="region" aria-label="构件类型">
+				<div class="type-label" id="type-label">TYPE</div>
+				<div id="summary-type" class="type-value" role="status" aria-labelledby="type-label" aria-live="polite">{Element Type}</div>
 			</div>
-			<div class="no-selection-message" id="no-selection-message">未选择构件</div>
+			<div class="no-selection-message" id="no-selection-message" role="alert" aria-live="assertive">未选择构件</div>
+		</div>
+	</div>
+	
+	<!-- 编辑模式通知栏（当处于编辑模式时显示） -->
+	<div id="edit-mode-notification" class="edit-mode-notification hidden" role="alert" aria-live="assertive" aria-label="编辑模式通知">
+		<div class="notification-content">
+			<span class="notification-icon" aria-hidden="true">⚠️</span>
+			<span class="notification-text">当前处于编辑模式。请保存或取消编辑后才能选择其他构件。</span>
 		</div>
 	</div>
 
 	<!-- 第三组信息：构件信息填写界面和照片功能 -->
-	<div class="group-3">
-		<h2>构件信息 <span id="componentinfo-unsaved-indicator" class="unsaved-indicator hidden">*</span></h2>
+	<div class="group-3" role="main" aria-label="构件信息管理">
+		<h2 id="component-info-heading">构件信息 <span id="componentinfo-unsaved-indicator" class="unsaved-indicator hidden" aria-label="有未保存的更改" aria-hidden="true">*</span></h2>
 		
 		<!-- 状态2消息：已选择构件无信息 -->
-		<div class="no-info-message" id="no-info-message">
+		<div class="no-info-message" id="no-info-message" role="status" aria-live="polite" aria-atomic="true">
 			请填写构件编号和照片描述信息
+			<div style="margin-top: 12px;">
+				<button id="add-info-btn" class="secondary" role="button" aria-label="添加构件信息" tabindex="0">添加信息</button>
+			</div>
 		</div>
 		
 		<!-- 状态3内容：已选择构件有信息 -->
 		<div class="has-info-content">
 			<!-- 构件编号输入框 -->
 			<div class="form-group">
-				<label class="form-label" for="component-id">构件编号</label>
-				<input type="text" id="component-id" class="form-input" placeholder="请填写构件编号" disabled>
+				<label class="form-label" for="component-id" id="component-id-label">构件编号</label>
+				<input type="text" id="component-id" class="form-input" placeholder="请填写构件编号" disabled
+					aria-labelledby="component-id-label" aria-describedby="component-id-description" tabindex="-1"
+					aria-readonly="true" aria-invalid="false">
+				<div id="component-id-description" class="sr-only">输入构件的唯一编号标识</div>
 			</div>
 			
 			<!-- 照片描述输入框 -->
 			<div class="form-group">
-				<label class="form-label" for="photo-description">照片描述</label>
-				<input type="text" id="photo-description" class="form-input" placeholder="请输入照片描述" disabled>
+				<label class="form-label" for="photo-description" id="photo-description-label">照片描述</label>
+				<input type="text" id="photo-description" class="form-input" placeholder="请输入照片描述" disabled
+					aria-labelledby="photo-description-label" aria-describedby="photo-description-description" tabindex="-1"
+					aria-readonly="true" aria-invalid="false">
+				<div id="photo-description-description" class="sr-only">输入照片的描述信息</div>
 			</div>
 			
 			<!-- 照片预览 -->
 			<div class="form-group">
-				<label class="form-label">照片预览</label>
-				<div class="photo-preview-container">
-					<div class="photo-preview">
-						<div class="photo-preview-placeholder">未选择照片</div>
-						<img id="photo-display" src="" alt="Photo preview" class="hidden">
+				<label class="form-label" id="photo-preview-label">照片预览</label>
+				<div class="photo-preview-container" role="region" aria-labelledby="photo-preview-label">
+					<div class="photo-preview" role="img" aria-label="照片预览区域">
+						<div class="photo-preview-placeholder" id="photo-placeholder-text">未选择照片</div>
+						<img id="photo-display" src="" alt="照片预览" class="hidden" aria-describedby="photo-index">
 					</div>
-					<div class="photo-navigation hidden">
-						<button id="prev-photo-btn" class="photo-nav-btn" disabled>‹</button>
-						<span id="photo-index" class="photo-index">0 / 0</span>
-						<button id="next-photo-btn" class="photo-nav-btn" disabled>›</button>
+					<div class="photo-navigation hidden" role="group" aria-label="照片导航">
+						<button id="prev-photo-btn" class="photo-nav-btn" disabled role="button" aria-label="上一张照片" tabindex="-1" aria-disabled="true">‹</button>
+						<span id="photo-index" class="photo-index" role="status" aria-live="polite">0 / 0</span>
+						<button id="next-photo-btn" class="photo-nav-btn" disabled role="button" aria-label="下一张照片" tabindex="-1" aria-disabled="true">›</button>
 					</div>
 					<!-- 调试信息显示区域 -->
-					<div id="photo-debug-info" class="photo-debug-info hidden">
+					<div id="photo-debug-info" class="photo-debug-info hidden" role="status" aria-live="polite">
 						<div class="debug-header">调试信息 (F12控制台不可用时使用):</div>
 						<div class="debug-content"></div>
 					</div>
+					<!-- 照片加载状态公告 -->
+					<div id="photo-loading-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 				</div>
 			</div>
 			
 			<!-- 控制按钮 -->
-			<div class="controls">
-				<button id="select-photos-btn" class="secondary" disabled>选择照片</button>
-				<button id="view-photos-btn" class="secondary" disabled>查看照片</button>
-				<button id="edit-info-btn">编辑信息</button>
+			<div class="controls" role="group" aria-label="构件信息操作按钮">
+				<button id="select-photos-btn" class="secondary" disabled role="button" aria-label="选择照片" tabindex="0" aria-disabled="true" aria-describedby="select-photos-tooltip">选择照片</button>
+				<button id="view-photos-btn" class="secondary" disabled role="button" aria-label="查看照片" tabindex="0" aria-disabled="true" aria-describedby="view-photos-tooltip">查看照片</button>
+				<button id="edit-info-btn" role="button" aria-label="编辑构件信息" tabindex="0">编辑信息</button>
+				<div id="select-photos-tooltip" class="sr-only" aria-live="polite"></div>
+				<div id="view-photos-tooltip" class="sr-only" aria-live="polite"></div>
 			</div>
 			
 			<!-- 编辑模式按钮（默认隐藏） -->
-			<div class="edit-mode-buttons hidden">
-				<button id="save-info-btn" class="hidden">保存</button>
-				<button id="cancel-edit-btn" class="secondary hidden">取消编辑</button>
+			<div class="edit-mode-buttons hidden" role="group" aria-label="编辑模式操作按钮">
+				<button id="save-info-btn" class="hidden" role="button" aria-label="保存构件信息" tabindex="-1">保存</button>
+				<button id="cancel-edit-btn" class="secondary hidden" role="button" aria-label="取消编辑" tabindex="-1">取消编辑</button>
+			</div>
+			
+			<!-- 确认对话框（内联，非模态） -->
+			<div id="confirmation-dialog" class="confirmation-dialog hidden" role="alertdialog" aria-labelledby="confirmation-message" aria-describedby="confirmation-description" aria-modal="false">
+				<div class="confirmation-content">
+					<p id="confirmation-message">确认要放弃未保存的更改吗？</p>
+					<p id="confirmation-description" class="sr-only">此操作将丢失所有未保存的更改并退出编辑模式</p>
+					<div class="confirmation-buttons" role="group" aria-label="确认对话框按钮">
+						<button id="confirm-btn" class="primary" role="button" aria-label="确认放弃更改" tabindex="0">确认</button>
+						<button id="cancel-confirm-btn" class="secondary" role="button" aria-label="取消并继续编辑" tabindex="0">取消</button>
+					</div>
+				</div>
 			</div>
 			
 			<!-- IFC Properties Section -->
-			<div class="ifc-properties-section">
-				<h3>IFC属性</h3>
-				<div class="ifc-controls">
+			<div class="ifc-properties-section" role="region" aria-label="IFC属性管理">
+				<h3 id="ifc-properties-heading">IFC属性</h3>
+				<div class="ifc-controls" role="group" aria-labelledby="ifc-properties-heading">
 					<div class="search-box">
-						<input type="text" id="property-search" placeholder="Search properties..." />
+						<input type="text" id="property-search" placeholder="Search properties..." 
+							aria-label="搜索IFC属性" aria-describedby="property-search-description" tabindex="0" />
+						<div id="property-search-description" class="sr-only">输入关键词搜索IFC属性</div>
 					</div>
-					<button id="refresh-btn" title="Refresh properties">
+					<button id="refresh-btn" title="Refresh properties" role="button" aria-label="刷新IFC属性" tabindex="0">
 						↻ Refresh
 					</button>
-					<button id="view-ifc-properties-btn">查看构件的IFC属性</button>
+					<button id="view-ifc-properties-btn" role="button" aria-label="查看构件的IFC属性" tabindex="0">查看构件的IFC属性</button>
 				</div>
 
-				<div id="loading-state" class="loading-state hidden">
+				<div id="loading-state" class="loading-state hidden" role="status" aria-live="polite" aria-busy="true">
 					<h3>Loading IFC properties...</h3>
 					<p>Please wait while fetching property data.</p>
 				</div>
 
-				<div id="empty-state" class="empty-state hidden">
+				<div id="empty-state" class="empty-state hidden" role="status" aria-live="polite">
 					<h3>No element selected</h3>
 					<p>Select an element in Archicad to view its IFC properties.</p>
 				</div>
 				
-				<div id="no-match-state" class="empty-state hidden">
+				<div id="no-match-state" class="empty-state hidden" role="status" aria-live="polite">
 					<h3>No matching properties</h3>
 					<p>Try adjusting your search to find what you're looking for.</p>
 				</div>
 				
-				<div id="error-state" class="error-notice hidden">
+				<div id="error-state" class="error-notice hidden" role="alert" aria-live="assertive">
 					<h3>Error loading IFC properties</h3>
 					<p id="error-message">An unexpected error occurred while fetching IFC properties.</p>
-					<button id="retry-btn" class="secondary" style="margin-top: 8px;">Retry</button>
+					<button id="retry-btn" class="secondary" style="margin-top: 8px;" role="button" aria-label="重试加载IFC属性" tabindex="0">Retry</button>
 				</div>
 
-				<div id="property-groups" class="property-groups">
+				<div id="property-groups" class="property-groups" role="region" aria-label="IFC属性分组列表" aria-live="polite">
 					<!-- Property groups will be inserted here by JavaScript -->
 				</div>
 			</div>
 		</div>
 	</div>
 
+	<!-- 屏幕阅读器公告区域 -->
+	<div id="screen-reader-announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	
 	<!-- JavaScript桥接状态显示 -->
-	<div style="font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border);">
+	<div style="font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border);" role="status" aria-live="polite">
 		<span id="bridge-status" style="color: #ef4444;">(桥接检测中...)</span>
 	</div>
 
 	
+	<div id="ui-state-indicator" style="font-size: 10px; color: #06b6d4; background: #111; padding: 4px; margin-top: 8px; border-top: 1px solid #333;">
+		UI状态: <span id="ui-state-text">检测中...</span>
+	</div>
+	<div id="debug-output" style="font-size: 10px; color: #666; background: #111; padding: 4px; margin-top: 8px; max-height: 100px; overflow: auto; border-top: 1px solid #333;"></div>
 </body>
 </html>
     </div>
@@ -900,14 +1042,7 @@
                 ];
             },
             
-            // 4. GetCachedIFCProperties
-            GetCachedIFCProperties: function(elementGuid) {
-                console.log("ACAPI.GetCachedIFCProperties called with:", elementGuid);
-                return [
-                    ["IfcWall", "Name", "Wall-01", "IfcLabel", ""],
-                    ["IfcWall", "Description", "Exterior wall", "IfcText", ""]
-                ];
-            },
+
             
             // 5. ComponentInfo_GetComponentInfo
             ComponentInfo_GetComponentInfo: function(elementGuid) {
@@ -989,7 +1124,7 @@
                 { name: 'GetSelectedElements', test: () => ACAPI.GetSelectedElements() },
                 { name: 'GetPluginVersion', test: () => ACAPI.GetPluginVersion() },
                 { name: 'GetAllIFCProperties', test: () => ACAPI.GetAllIFCProperties('{test-guid}') },
-                { name: 'GetCachedIFCProperties', test: () => ACAPI.GetCachedIFCProperties('{test-guid}') },
+
                 { name: 'ComponentInfo_GetComponentInfo', test: () => ACAPI.ComponentInfo_GetComponentInfo('{test-guid}') },
                 { name: 'ComponentInfo_SaveComponentInfo', test: () => ACAPI.ComponentInfo_SaveComponentInfo(['guid', 'id', 'desc', []]) },
                 { name: 'TestBridge', test: () => ACAPI.TestBridge('test message') },

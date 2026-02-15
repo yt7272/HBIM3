@@ -8,16 +8,23 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
-  "keywords": ["archicad", "plugin", "testing"],
+  "keywords": [
+    "archicad",
+    "plugin",
+    "testing"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest-environment-jsdom": "^29.7.0",
+    "playwright": "^1.58.2"
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["./__tests__/setup.js"],
+    "setupFilesAfterEnv": [
+      "./__tests__/setup.js"
+    ],
     "testMatch": [
       "**/__tests__/**/*.js",
       "**/?(*.)+(spec|test).js"
@@ -32,6 +39,9 @@
       "!RFIX/**/*.test.js"
     ],
     "coverageDirectory": "coverage",
-    "coverageReporters": ["text", "lcov"]
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ]
   }
 }

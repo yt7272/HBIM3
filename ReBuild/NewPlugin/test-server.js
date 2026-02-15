@@ -51,13 +51,7 @@ const server = http.createServer((req, res) => {
                                 ["IfcWall", "Description", "Exterior wall", "IfcText", "", true]
                             ]);
                         },
-                        GetCachedIFCProperties: function(elementGuid) {
-                            console.log("ACAPI.GetCachedIFCProperties called with:", elementGuid);
-                            return Promise.resolve([
-                                ["IfcWall", "Name", "Wall-01", "IfcLabel", "", true],
-                                ["IfcWall", "Description", "Exterior wall", "IfcText", "", true]
-                            ]);
-                        },
+
                         ComponentInfo_GetComponentInfo: function(elementGuid) {
                             console.log("ACAPI.ComponentInfo_GetComponentInfo called with:", elementGuid);
                             // Return as array format expected by JavaScript code

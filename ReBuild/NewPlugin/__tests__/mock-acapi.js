@@ -23,13 +23,7 @@ const mockACAPI = {
         ];
     }),
     
-    // 4. GetCachedIFCProperties
-    GetCachedIFCProperties: jest.fn((elementGuid) => {
-        return [
-            ["IfcWall", "Name", "Wall-01", "IfcLabel", ""],
-            ["IfcWall", "Description", "Exterior wall", "IfcText", ""]
-        ];
-    }),
+
     
     // 5. ComponentInfo_GetComponentInfo
     ComponentInfo_GetComponentInfo: jest.fn((elementGuid) => {

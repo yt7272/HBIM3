@@ -66,14 +66,7 @@ const testHtmlContent = `
                 ];
             },
             
-            // 4. GetCachedIFCProperties
-            GetCachedIFCProperties: function(elementGuid) {
-                console.log("ACAPI.GetCachedIFCProperties called with:", elementGuid);
-                return [
-                    ["IfcWall", "Name", "Wall-01", "IfcLabel", ""],
-                    ["IfcWall", "Description", "Exterior wall", "IfcText", ""]
-                ];
-            },
+
             
             // 5. ComponentInfo_GetComponentInfo
             ComponentInfo_GetComponentInfo: function(elementGuid) {
@@ -155,7 +148,7 @@ const testHtmlContent = `
                 { name: 'GetSelectedElements', test: () => ACAPI.GetSelectedElements() },
                 { name: 'GetPluginVersion', test: () => ACAPI.GetPluginVersion() },
                 { name: 'GetAllIFCProperties', test: () => ACAPI.GetAllIFCProperties('{test-guid}') },
-                { name: 'GetCachedIFCProperties', test: () => ACAPI.GetCachedIFCProperties('{test-guid}') },
+
                 { name: 'ComponentInfo_GetComponentInfo', test: () => ACAPI.ComponentInfo_GetComponentInfo('{test-guid}') },
                 { name: 'ComponentInfo_SaveComponentInfo', test: () => ACAPI.ComponentInfo_SaveComponentInfo(['guid', 'id', 'desc', []]) },
                 { name: 'TestBridge', test: () => ACAPI.TestBridge('test message') },

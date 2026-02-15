@@ -11,6 +11,7 @@
 #include "BM.hpp"
 #include "APIEnvir.h"  // For GSErrCode, NoError
 #include "GSSystem.h"  // For GSSysBeep
+#include "NewPluginDebug.hpp"
 
 // Helper functions from APICommon.h that need implementations
 void WriteReport_Err (const char* info, GSErrCode err)
@@ -895,7 +896,8 @@ void ComponentInfo::RunViewComponentPhotosCommand ()
 			}
 		}
 	} catch (...) {
-		// 忽略异常
+		// IFC API异常，忽略但记录日志
+		NewPluginDebugLog("[ComponentInfo] IFC API异常，忽略IFC类型获取");
 	}
 	
 	if (!ifcType.IsEmpty ()) {
@@ -1187,7 +1189,8 @@ GS::UniString ComponentInfo::GetGlobalIdPropertyValue (const API_Guid& elementGu
         }
     }
     catch (...) {
-        // Handle any unexpected exceptions
+        // IFC API异常，忽略但记录日志
+        NewPluginDebugLog("[ComponentInfo] IFC API异常，忽略GlobalId获取");
     }
     
     return globalId; // Returns empty string if GlobalId not found

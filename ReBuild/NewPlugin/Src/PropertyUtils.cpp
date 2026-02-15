@@ -17,6 +17,7 @@
 #include "Folder.hpp"
 #include "APICommon.h"
 #include "MDIDs_Public.h"
+#include "NewPluginDebug.hpp"
 
 // C++ standard library headers (仅限必要)
 #include <variant>
@@ -201,9 +202,13 @@ GSErrCode PropertyUtils::PropertyToString (const API_Property& property, GS::Uni
 
 GS::UniString PropertyUtils::GetAddOnVersionString ()
 {
+	NewPluginDebugLog("[版本] GetAddOnVersionString 被调用");
+	
 #ifdef AC_ADDON_VERSION_STRING
+	NewPluginDebugLog("[版本] AC_ADDON_VERSION_STRING 已定义: %s", AC_ADDON_VERSION_STRING);
 	return GS::UniString (AC_ADDON_VERSION_STRING);
 #else
+	NewPluginDebugLog("[版本] AC_ADDON_VERSION_STRING 未定义，返回 0.0.0.0");
 	return GS::UniString ("0.0.0.0");
 #endif
 }
@@ -383,7 +388,8 @@ GS::Array<PropertyUtils::PropertyInfo> PropertyUtils::GetAllIFCPropertiesForElem
 
 	}
 	catch (...) {
-		// Handle any unexpected exceptions
+		// IFC API异常，忽略但记录日志
+		NewPluginDebugLog("[PropertyUtils] IFC API异常，忽略属性获取");
 	}
 
 	return propertyInfos;

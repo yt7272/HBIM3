@@ -54,6 +54,7 @@ GSErrCode FreeData (void)
 {
 	ACAPI_Notification_CatchSelectionChange (nullptr);
 	ACAPI_UnregisterModelessWindow (PluginPalette::GetPaletteReferenceId ());
+	PluginPalette::DestroyInstance ();
 	return NoError;
 }
 

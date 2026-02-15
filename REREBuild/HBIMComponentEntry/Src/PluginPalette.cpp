@@ -2,6 +2,7 @@
 #include "APICommon.h"
 #include "APIdefs.h"
 #include "DGModule.hpp"
+#include "FileSystem.hpp"
 #include <mutex>
 #include <stdio.h>
 
@@ -19,6 +20,10 @@ namespace {
 	static const GS::UniString kHBIMGroupName = "HBIM属性信息";
 	static const GS::UniString kHBIMIdName = "HBIM构件编号";
 	static const GS::UniString kHBIMDescName = "HBIM构件说明";
+	
+	// HBIM图片常量
+	static const GS::UniString kHBIMImageGroupName = "HBIM构件图片";
+	static const GS::UniString kHBIMImageLinksName = "HBIM图片链接";
 	
 	// Forward declaration
 	static void CollectClassificationItemsRecursive(const API_Guid& itemGuid, GS::Array<API_Guid>& outGuids);
@@ -397,6 +402,17 @@ PluginPalette::PluginPalette ()
 	, hbimDescValue (GetReference (), HBIMDescValueId)
 	, hbimActionButton (GetReference (), HBIMActionButtonId)
 	, hbimCancelButton (GetReference (), HBIMCancelButtonId)
+	, imageSeparator (GetReference (), ImageSeparatorId)
+	, imageTitle (GetReference (), ImageTitleId)
+	, imageTitleUnderline (GetReference (), ImageTitleUnderlineId)
+	, imageCountLabel (GetReference (), ImageCountLabelId)
+	, imageCountValue (GetReference (), ImageCountValueId)
+	, imageCurrentLabel (GetReference (), ImageCurrentLabelId)
+	, imageCurrentValue (GetReference (), ImageCurrentValueId)
+	, imageSelectButton (GetReference (), ImageSelectButtonId)
+	, imageDeleteButton (GetReference (), ImageDeleteButtonId)
+	, imagePrevButton (GetReference (), ImagePrevButtonId)
+	, imageNextButton (GetReference (), ImageNextButtonId)
 	, hasHBIMProperties (false)
 	, isHBIMEditMode (false)
 	, hbimGroupGuid (APINULLGuid)
@@ -404,6 +420,8 @@ PluginPalette::PluginPalette ()
 	, hbimDescGuid (APINULLGuid)
 	, currentElemGuid (APINULLGuid)
 	, isReSelectingElement (false)
+	, hasHBIMImages (false)
+	, currentImageIndex (0)
 {
 
 	
@@ -473,6 +491,41 @@ PluginPalette::PluginPalette ()
 	
 	hbimActionButton.Enable();
 	hbimCancelButton.Enable();
+	
+	// 初始化HBIM图片UI
+	imageSeparator.Show();
+	imageTitle.SetText("HBIM构件图片");
+	imageTitle.Show();
+	imageTitleUnderline.Show();
+	imageTitleUnderline.Redraw();
+	imageCountLabel.SetText("图片数量:");
+	imageCountLabel.Show();
+	imageCountValue.SetText("0");
+	imageCountValue.Show();
+	imageCurrentLabel.SetText("当前图片:");
+	imageCurrentLabel.Show();
+	imageCurrentValue.SetText("无");
+	imageCurrentValue.Show();
+	
+	imageSelectButton.SetText("选择图片");
+	imageSelectButton.Show();
+	imageDeleteButton.SetText("删除当前");
+	imageDeleteButton.Show();
+	imagePrevButton.SetText("上一张");
+	imagePrevButton.Show();
+	imageNextButton.SetText("下一张");
+	imageNextButton.Show();
+	
+	// 附加图片按钮观察者
+	imageSelectButton.Attach(*this);
+	imageDeleteButton.Attach(*this);
+	imagePrevButton.Attach(*this);
+	imageNextButton.Attach(*this);
+	
+	imageSelectButton.Enable();
+	imageDeleteButton.Disable();
+	imagePrevButton.Disable();
+	imageNextButton.Disable();
 	
 	// 调试日志
 	ACAPI_WriteReport("HBIMComponentEntry: 插件面板已创建，按钮观察者已附加", false);
@@ -903,8 +956,11 @@ GSErrCode PluginPalette::SelectionChangeHandler (const API_Neig* selElemNeig)
 		
 		// 检查HBIM属性
 		instance.CheckHBIMProperties(selElemNeig->guid);
+		
+		// 检查HBIM图片
+		instance.CheckHBIMImages();
 	}
-	
+
 	return NoError;
 }
 
@@ -932,6 +988,236 @@ void PluginPalette::PanelCloseRequested (const DG::PanelCloseRequestEvent& ev, b
 	*accepted = true;
 }
 
+void PluginPalette::UpdateHBIMImageUI ()
+{
+	if (hasHBIMImages && imagePaths.GetSize() > 0) {
+		GS::UniString countText;
+		countText.Printf("%d", imagePaths.GetSize());
+		imageCountValue.SetText(countText);
+		
+		if (currentImageIndex < imagePaths.GetSize()) {
+			GS::UniString currentText;
+			currentText.Printf("%d/%d", currentImageIndex + 1, imagePaths.GetSize());
+			imageCurrentValue.SetText(currentText);
+		}
+		
+		imageDeleteButton.Enable();
+		imagePrevButton.Enable();
+		imageNextButton.Enable();
+		
+		if (currentImageIndex == 0) {
+			imagePrevButton.Disable();
+		}
+		if (currentImageIndex >= imagePaths.GetSize() - 1) {
+			imageNextButton.Disable();
+		}
+	} else {
+		imageCountValue.SetText("0");
+		imageCurrentValue.SetText("无");
+		imageDeleteButton.Disable();
+		imagePrevButton.Disable();
+		imageNextButton.Disable();
+	}
+	
+	imageCountValue.Redraw();
+	imageCurrentValue.Redraw();
+	imageDeleteButton.Redraw();
+	imagePrevButton.Redraw();
+	imageNextButton.Redraw();
+}
+
+void PluginPalette::CheckHBIMImages ()
+{
+	hasHBIMImages = false;
+	imagePaths.Clear();
+	currentImageIndex = 0;
+	
+	if (currentElemGuid == APINULLGuid) {
+		UpdateHBIMImageUI();
+		return;
+	}
+	
+	// 获取构件GlobalId用于构建图片路径
+	GS::UniString globalId = GetGlobalIdForElement(currentElemGuid);
+	if (globalId == "未找到") {
+		UpdateHBIMImageUI();
+		return;
+	}
+	
+	// 检查项目是否已保存
+	if (!IsProjectSaved()) {
+		UpdateHBIMImageUI();
+		return;
+	}
+	
+	// 确保图片文件夹存在
+	GSErrCode err = EnsureHBIMImageFolder();
+	if (err != NoError) {
+		UpdateHBIMImageUI();
+		return;
+	}
+	
+	// 构建构件图片文件夹路径
+	GS::UniString elementImagePath = projectHash;
+	elementImagePath.Append("/");
+	elementImagePath.Append(globalId);
+	
+	// 检查文件夹是否存在
+	// 这里暂时简单实现，后续需要实际检查图片文件
+	
+	UpdateHBIMImageUI();
+}
+
+void PluginPalette::SelectHBIMImages ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		DG::InformationAlert("提示", "请先选择一个构件", "确定");
+		return;
+	}
+	
+	// 使用DG::FileDialog选择多个图片文件
+	DG::FileDialog dlg(DG::FileDialog::OpenMultiFile);
+	FTM::FileTypeManager mgr("HBIMComponentEntryImages");
+	FTM::FileType typeJpg("JPEG", "jpg", 0, 0, 0);
+	FTM::FileType typePng("PNG", "png", 0, 0, 0);
+	FTM::TypeID idJpg = mgr.AddType(typeJpg);
+	FTM::TypeID idPng = mgr.AddType(typePng);
+	dlg.AddFilter(idJpg);
+	dlg.AddFilter(idPng);
+	dlg.SetTitle("选择HBIM构件图片");
+	
+	if (dlg.Invoke()) {
+		// 清空现有图片路径
+		imagePaths.Clear();
+		
+		// 获取选中的文件
+		USize n = dlg.GetSelectionCount();
+		for (UIndex i = 0; i < n; ++i) {
+			IO::Location fileLocation = dlg.GetSelectedFile(i);
+			GS::UniString filePath;
+			fileLocation.ToPath(&filePath);
+			imagePaths.Push(filePath);
+		}
+		
+		// 更新状态
+		hasHBIMImages = (imagePaths.GetSize() > 0);
+		currentImageIndex = 0;
+		UpdateHBIMImageUI();
+		
+		// 确保图片文件夹存在
+		EnsureHBIMImageFolder();
+	}
+}
+
+void PluginPalette::DeleteCurrentHBIMImage ()
+{
+	if (!hasHBIMImages || imagePaths.GetSize() == 0 || currentImageIndex >= imagePaths.GetSize()) {
+		return;
+	}
+	
+	// 删除当前图片
+	imagePaths.Delete(currentImageIndex);
+	
+	// 更新状态
+	if (imagePaths.GetSize() == 0) {
+		hasHBIMImages = false;
+		currentImageIndex = 0;
+	} else {
+		// 调整当前索引
+		if (currentImageIndex >= imagePaths.GetSize()) {
+			currentImageIndex = imagePaths.GetSize() - 1;
+		}
+	}
+	
+	UpdateHBIMImageUI();
+}
+
+void PluginPalette::NavigateHBIMImage (bool forward)
+{
+	if (!hasHBIMImages || imagePaths.GetSize() == 0) {
+		return;
+	}
+	
+	if (forward) {
+		if (currentImageIndex < imagePaths.GetSize() - 1) {
+			currentImageIndex++;
+		}
+	} else {
+		if (currentImageIndex > 0) {
+			currentImageIndex--;
+		}
+	}
+	
+	UpdateHBIMImageUI();
+}
+
+GSErrCode PluginPalette::EnsureHBIMImageFolder ()
+{
+	// 获取项目信息
+	API_ProjectInfo projectInfo;
+	GSErrCode err = ACAPI_ProjectOperation_Project(&projectInfo);
+	if (err != NoError) {
+		ACAPI_WriteReport("EnsureHBIMImageFolder: 获取项目信息失败", true);
+		return err;
+	}
+	
+	// 检查项目是否已保存
+	if (projectInfo.untitled) {
+		ACAPI_WriteReport("EnsureHBIMImageFolder: 项目未保存，无法创建图片文件夹", false);
+		return APIERR_GENERAL;
+	}
+	
+	// 获取项目文件夹路径
+	IO::Location projectLocation = *projectInfo.location;
+	GS::UniString projectPath;
+	projectLocation.ToPath(&projectPath);
+	
+	// 计算项目哈希（用于唯一标识项目）
+	projectHash = CalculateProjectHash();
+	
+	// 创建HBIM_Images文件夹
+	GS::UniString hbimImagesPath = projectPath;
+	hbimImagesPath.Append("/HBIM_Images");
+	
+	// 检查文件夹是否存在，不存在则创建
+	// 暂时简化实现，不检查文件夹是否存在
+	// 后续需要实现完整的文件夹创建逻辑
+	
+	return NoError;
+}
+
+GS::UniString PluginPalette::CalculateProjectHash ()
+{
+	// 获取项目信息
+	API_ProjectInfo projectInfo;
+	GSErrCode err = ACAPI_ProjectOperation_Project(&projectInfo);
+	if (err != NoError) {
+		return "unknown";
+	}
+	
+	// 使用项目路径计算哈希
+	IO::Location projectLocation = *projectInfo.location;
+	GS::UniString projectPath;
+	projectLocation.ToPath(&projectPath);
+	
+	// 简单哈希计算
+	UInt32 hashValue = GS::CalculateHashValue(projectPath);
+	GS::UniString hashStr;
+	hashStr.Printf("%08X", hashValue);
+	return hashStr;
+}
+
+bool PluginPalette::IsProjectSaved ()
+{
+	API_ProjectInfo projectInfo;
+	GSErrCode err = ACAPI_ProjectOperation_Project(&projectInfo);
+	if (err != NoError) {
+		return false;
+	}
+	
+	return !projectInfo.untitled;
+}
+
 void PluginPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
 {
 	if (ev.GetSource() == &hbimActionButton) {
@@ -946,5 +1232,13 @@ void PluginPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
 		}
 	} else if (ev.GetSource() == &hbimCancelButton) {
 		ExitHBIMEditMode(false);
+	} else if (ev.GetSource() == &imageSelectButton) {
+		SelectHBIMImages();
+	} else if (ev.GetSource() == &imageDeleteButton) {
+		DeleteCurrentHBIMImage();
+	} else if (ev.GetSource() == &imagePrevButton) {
+		NavigateHBIMImage(false);
+	} else if (ev.GetSource() == &imageNextButton) {
+		NavigateHBIMImage(true);
 	}
 }

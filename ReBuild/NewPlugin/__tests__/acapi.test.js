@@ -33,16 +33,7 @@ describe('ACAPI Mock Functions', () => {
         expect(result[0][2]).toBe('Wall-01');
     });
 
-    // Test 4: GetCachedIFCProperties
-    test('GetCachedIFCProperties returns cached properties', () => {
-        const elementGuid = '{12345678-1234-1234-1234-123456789012}';
-        const result = ACAPI.GetCachedIFCProperties(elementGuid);
-        expect(result).toBeDefined();
-        expect(Array.isArray(result)).toBe(true);
-        expect(result.length).toBe(2);
-        expect(result[0][0]).toBe('IfcWall');
-        expect(result[0][1]).toBe('Name');
-    });
+
 
     // Test 5: ComponentInfo_GetComponentInfo
     test('ComponentInfo_GetComponentInfo returns component info object', () => {

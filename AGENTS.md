@@ -4,10 +4,11 @@ This file provides essential build, test, and coding standards for AI agents wor
 
 ## Project Overview
 
-This is an ArchiCAD plugin development project containing three main plugins:
+This is an ArchiCAD plugin development project containing four main plugins:
 - **ComponentInfo**: Adds custom properties (component ID, photo description, photo paths)
 - **IFCPropertyReader**: Reads and displays IFC properties with HTML UI and LRU caching
 - **MergedPlugin**: Combined ComponentInfo + IFCPropertyReader with unified HTML interface
+- **HBIMComponentEntry**: Adds HBIM properties (HBIM构件编号, HBIM构件说明) with add/edit workflow
 
 Based on ArchiCAD API Development Kit 29.3100, using C++20 standard.
 
@@ -34,6 +35,13 @@ cd ReBuild/NewPlugin
 ./build.sh                  # Build merged plugin
 ```
 
+**HBIMComponentEntry (in REREBuild/HBIMComponentEntry):**
+```bash
+cd REREBuild/HBIMComponentEntry
+./build.sh                  # Normal build with auto versioning (0.month.day.build)
+./build.sh clean           # Clean build with counter reset
+```
+
 **Manual Build:**
 ```bash
 mkdir build && cd build
@@ -58,6 +66,9 @@ window.testComponentInfo.runAllTests();
 
 // MergedPlugin tests  
 window.testMergedPlugin.runAllTests();
+
+// HBIMComponentEntry tests
+// window.testHBIMComponentEntry.runAllTests(); // To be implemented
 ```
 
 **Interface Validation:**
@@ -302,8 +313,11 @@ HBIM3/
 ├── IFCPropertyReader/      # IFC property reading with caching
 ├── ReBuild/               # Build directory containing merged plugin
 │   └── NewPlugin/         # Combined ComponentInfo + IFCPropertyReader (merged)
+├── REREBuild/             # HBIM plugin development directory
+│   └── HBIMComponentEntry/ # HBIM property plugin with add/edit workflow
 ├── ComponentInfo.bundle   # Built ComponentInfo plugin (macOS bundle)
 ├── MergedPlugin.bundle    # Built merged plugin (macOS bundle)
+├── HBIMComponentEntry.bundle # Built HBIM plugin (macOS bundle, in REREBuild/HBIMComponentEntry/build/Release/)
 ├── API.Development.Kit.MAC.29.3100/  # Required API
 ├── .sisyphus/             # AI agent planning and session data
 ├── AGENTS.md              # This file (primary guide for AI agents)
@@ -372,6 +386,44 @@ jsVariable.AddFunction("GetSelectedElements", &GetSelectedElements);
 - **Validation**: HTML interface validation passes (13/13)
 - **Bundle**: Clean build, 636KB arm64 bundle, 17 files
 - **Documentation**: Complete TESTING.md and README.md
+
+## HBIMComponentEntry Plugin - HBIM属性信息管理
+
+### 功能概述
+HBIMComponentEntry插件为ArchiCAD构件添加HBIM属性信息管理功能，包括：
+- 创建"HBIM属性信息"属性组
+- 添加"HBIM构件编号"和"HBIM构件说明"两个文本属性
+- 提供添加/编辑/保存/取消的完整工作流程
+- 与现有IFC属性读取功能集成在同一面板中
+
+### 用户界面设计
+- **布局**：在现有IFC属性显示下方添加分隔线，新增"HBIM属性信息"区域
+- **控件**：包含标题、标签、文本编辑框、添加/编辑按钮、保存/取消按钮
+- **状态管理**：
+  - 无属性时：显示"添加"按钮
+  - 有属性时：显示属性值和"编辑"按钮  
+  - 编辑模式：显示编辑框和保存/取消按钮
+
+### 核心实现模式
+1. **属性组管理**：使用ArchiCAD Property API创建和管理属性组
+2. **属性定义**：创建自定义属性定义，设置对所有分类项可用
+3. **属性读写**：读取和写入构件属性值
+4. **UI状态同步**：根据属性状态动态更新UI控件显示
+
+### 关键代码模式
+```cpp
+// 创建HBIM属性组
+static GSErrCode FindOrCreateHBIMGroup(API_PropertyGroup& outGroup)
+// 创建属性定义  
+static GSErrCode FindOrCreateHBIMDefinition(const API_PropertyGroup& group, const GS::UniString& name, API_PropertyDefinition& outDef, GS::Array<API_Guid>& allClassificationItems)
+// 读取属性值
+static bool HasHBIMProperties(const API_Guid& elementGuid, API_Guid& outIdGuid, API_Guid& outDescGuid)
+```
+
+### 构建与测试
+- **构建命令**：`cd REREBuild/HBIMComponentEntry && ./build.sh`
+- **版本管理**：日期版本号 (0.month.day.build)
+- **签名**：复用现有Developer ID 625438022, Local ID 170868903
 
 ---
 *This file provides essential guidance for AI agents working in this ArchiCAD plugin codebase.*

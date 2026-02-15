@@ -27,7 +27,18 @@ public:
 		HBIMDescLabelId = 12,
 		HBIMDescValueId = 13,
 		HBIMActionButtonId = 14,
-		HBIMCancelButtonId = 15
+		HBIMCancelButtonId = 15,
+		ImageSeparatorId = 16,
+		ImageTitleId = 17,
+		ImageTitleUnderlineId = 18,
+		ImageCountLabelId = 19,
+		ImageCountValueId = 20,
+		ImageCurrentLabelId = 21,
+		ImageCurrentValueId = 22,
+		ImageSelectButtonId = 23,
+		ImageDeleteButtonId = 24,
+		ImagePrevButtonId = 25,
+		ImageNextButtonId = 26
 	};
 
 	static GSErrCode PaletteControlCallBack (Int32 paletteId, API_PaletteMessageID messageID, GS::IntPtr param);
@@ -67,6 +78,19 @@ private:
 	DG::Button hbimActionButton;
 	DG::Button hbimCancelButton;
 	
+	// HBIM图片控件
+	DG::LeftText imageSeparator;
+	DG::CenterText imageTitle;
+	DG::LeftText imageTitleUnderline;
+	DG::LeftText imageCountLabel;
+	DG::LeftText imageCountValue;
+	DG::LeftText imageCurrentLabel;
+	DG::LeftText imageCurrentValue;
+	DG::Button imageSelectButton;
+	DG::Button imageDeleteButton;
+	DG::Button imagePrevButton;
+	DG::Button imageNextButton;
+	
 	// HBIM属性状态
 	bool hasHBIMProperties;
 	bool isHBIMEditMode;
@@ -77,6 +101,12 @@ private:
 	API_Guid hbimDescGuid;
 	API_Guid currentElemGuid;
 	bool isReSelectingElement;
+	
+	// HBIM图片状态
+	bool hasHBIMImages;
+	GS::Array<GS::UniString> imagePaths;
+	UInt32 currentImageIndex;
+	GS::UniString projectHash;
 
 	// HBIM属性管理函数
 	void UpdateHBIMUI ();
@@ -89,6 +119,16 @@ private:
  	// HBIM属性初始化
  	GSErrCode EnsureHBIMPropertiesInitialized ();
  	bool TryFindExistingHBIMPropertyGroupAndDefinitions ();
+ 	
+ 	// HBIM图片管理函数
+ 	void UpdateHBIMImageUI ();
+ 	void CheckHBIMImages ();
+ 	void SelectHBIMImages ();
+ 	void DeleteCurrentHBIMImage ();
+ 	void NavigateHBIMImage (bool forward);
+ 	GSErrCode EnsureHBIMImageFolder ();
+ 	GS::UniString CalculateProjectHash ();
+ 	bool IsProjectSaved ();
 	
 	void SetMenuItemCheckedState (bool checked);
 

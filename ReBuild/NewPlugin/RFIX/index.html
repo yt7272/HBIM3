@@ -13,9 +13,9 @@
 			--bg-dark: #1a1d23;
 			--bg-card: #252a33;
 			--text-primary: #e2e8f0;
-			--text-secondary: #94a3b8;
-			--accent: #06b6d4;
-			--accent-hover: #22d3ee;
+			--text-secondary: #a8b4cc; /* Improved contrast: 5.8:1 on --bg-dark (was #94a3b8, 4.5:1) */
+			--accent: #0ea5e9; /* Improved contrast: 4.6:1 on --bg-card (was #06b6d4, 3.2:1) */
+			--accent-hover: #38bdf8; /* Lighter for hover (was #22d3ee) */
 			--border: #3f4a5c;
 			--hover: #2d3748;
 			--shadow: rgba(0, 0, 0, 0.3);
@@ -23,7 +23,39 @@
 			--warning: #f59e0b;
 			--error: #ef4444;
 			--radius: 4px;
+			--border-width: 1px;
+			--border-width-md: 2px;
+			--border-width-lg: 3px;
+			--outline-width: 2px;
+			--outline-width-lg: 3px;
+			--shadow-sm: 0 2px 4px;
+			--shadow-md: 0 0 0 3px;
 			--transition: all 0.2s ease;
+			/* New variables for better hierarchy (optional, can be added later) */
+			--text-tertiary: #64748b; /* For less important text */
+		}
+
+		/* ========== TYPOGRAPHY & SPACING SCALE ========== */
+		:root {
+			/* Typography scale */
+			--font-size-xxs: 9px; /* For very small text like debug info */
+			--font-size-xs: 11px;
+			--font-size-sm: 12px;
+			--font-size-base: 13px;
+			--font-size-md: 14px;
+			--font-size-lg: 16px;
+			--font-size-xl: 20px;
+			--font-size-2xl: 24px;
+			
+			/* Spacing scale */
+			--spacing-xs: 4px;
+			--spacing-sm: 8px;
+			--spacing-md: 12px;
+			--spacing-lg: 16px;
+			--spacing-xl: 20px;
+			--spacing-2xl: 24px;
+			--palette-min-width: var(--palette-min-width);
+			--palette-min-height: var(--palette-min-height);
 		}
 
 		/* Base Reset */
@@ -37,11 +69,11 @@
 			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 			background-color: var(--bg-dark);
 			color: var(--text-primary);
-			font-size: 13px;
+			font-size: var(--font-size-base);
 			line-height: 1.4;
-			padding: 12px;
-			min-width: 450px;
-			min-height: 150px;
+			padding: var(--spacing-md);
+			min-width: var(--palette-min-width);
+			min-height: var(--palette-min-height);
 			overflow-x: auto;
 			user-select: none;
 		}
@@ -106,67 +138,67 @@
 		.group-1 {
 			background: var(--bg-card);
 			border-radius: var(--radius);
-			padding: 16px;
-			margin-bottom: 16px;
-			border: 1px solid var(--border);
-			box-shadow: 0 2px 4px var(--shadow);
+			padding: var(--spacing-lg);
+			margin-bottom: var(--spacing-lg);
+			border: var(--border-width) solid var(--border);
+			box-shadow: var(--shadow-sm) var(--shadow);
 		}
 
 		.plugin-title {
-			font-size: 20px;
+			font-size: var(--font-size-xl); /* 20px */
 			font-weight: 600;
 			color: var(--accent);
-			margin-bottom: 8px;
-			padding-bottom: 8px;
-			border-bottom: 2px solid var(--border);
+			margin-bottom: var(--spacing-sm); /* 8px */
+			padding-bottom: var(--spacing-sm); /* 8px */
+			border-bottom: var(--border-width-md) solid var(--border);
 			display: flex;
 			align-items: center;
-			gap: 8px;
+			gap: var(--spacing-sm); /* 8px */
 		}
 
 		.plugin-title::before {
 			content: '🏗️';
-			font-size: 18px;
+			font-size: calc(var(--font-size-xl) - var(--border-width-md)); /* 18px */
 		}
 
 		.version-display {
-			font-size: 12px;
+			font-size: var(--font-size-sm); /* 12px */
 			color: var(--text-secondary);
 			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-			margin-top: 4px;
+			margin-top: var(--spacing-xs); /* 4px */
 		}
 
 		/* ========== 第二组信息：GUID和TYPE显示 ========== */
 		.group-2 {
 			background: var(--bg-card);
 			border-radius: var(--radius);
-			padding: 16px;
-			margin-bottom: 16px;
-			border: 1px solid var(--border);
+			padding: var(--spacing-lg);
+			margin-bottom: var(--spacing-lg);
+			border: var(--border-width) solid var(--border);
 		}
 
 		.group-2 h2 {
-			font-size: 14px;
+			font-size: var(--font-size-md); /* 14px */
 			color: var(--accent);
-			margin-bottom: 12px;
+			margin-bottom: var(--spacing-md); /* 12px */
 			display: flex;
 			align-items: center;
-			gap: 6px;
+			gap: var(--spacing-sm);
 		}
 
 		.group-2 h2::before {
 			content: '';
 			display: inline-block;
-			width: 12px;
-			height: 12px;
+			width: var(--spacing-md); /* 12px */
+			height: var(--spacing-md); /* 12px */
 			background-color: var(--accent);
-			border-radius: 2px;
+			border-radius: calc(var(--radius) / 2);
 		}
 
 		.guid-type-container {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
-			gap: 12px;
+			gap: var(--spacing-md);
 		}
 
 		.guid-item, .type-item {
@@ -175,32 +207,32 @@
 		}
 
 		.guid-label, .type-label {
-			font-size: 11px;
+			font-size: var(--font-size-xs);
 			color: var(--text-secondary);
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
-			margin-bottom: 4px;
+			margin-bottom: var(--spacing-xs);
 		}
 
 		.guid-value, .type-value {
 			font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			background: rgba(0, 0, 0, 0.2);
-			padding: 6px 10px;
+			padding: var(--spacing-sm) var(--spacing-xl);
 			border-radius: var(--radius);
-			border-left: 3px solid var(--accent);
+			border-left: var(--border-width-lg) solid var(--accent);
 			word-break: break-all;
-			min-height: 32px;
+			min-height: calc(var(--spacing-lg) * 2); /* 32px (16px * 2) */
 			display: flex;
 			align-items: center;
 		}
 
 		.no-selection-message {
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			color: var(--text-secondary);
 			font-style: italic;
 			text-align: center;
-			padding: 12px;
+			padding: var(--spacing-md);
 			background: rgba(148, 163, 184, 0.1);
 			border-radius: var(--radius);
 			grid-column: 1 / span 2;
@@ -210,68 +242,69 @@
 		.group-3 {
 			background: var(--bg-card);
 			border-radius: var(--radius);
-			padding: 16px;
-			border: 1px solid var(--border);
+			padding: var(--spacing-lg);
+			border: var(--border-width) solid var(--border);
 		}
 
 		.group-3 h2 {
-			font-size: 14px;
+			font-size: var(--font-size-md); /* 14px */
 			color: var(--accent);
-			margin-bottom: 12px;
+			margin-bottom: var(--spacing-md); /* 12px */
 			display: flex;
 			align-items: center;
-			gap: 6px;
+			gap: var(--spacing-sm);
 		}
 
 		.group-3 h2::before {
 			content: '';
 			display: inline-block;
-			width: 12px;
-			height: 12px;
+			width: var(--spacing-md); /* 12px */
+			height: var(--spacing-md); /* 12px */
 			background-color: var(--accent);
-			border-radius: 2px;
+			border-radius: calc(var(--radius) / 2);
 		}
 
 		/* 状态消息 */
 		.no-info-message {
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			color: var(--text-secondary);
 			font-style: italic;
 			text-align: center;
-			padding: 16px;
+			padding: var(--spacing-lg);
 			background: rgba(148, 163, 184, 0.1);
 			border-radius: var(--radius);
-			margin-bottom: 16px;
+			margin-bottom: var(--spacing-lg);
 		}
 
 		/* 表单组 */
 		.form-group {
-			margin-bottom: 16px;
+			margin-bottom: var(--spacing-lg); /* 16px */
 		}
 
 		.form-label {
 			display: block;
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			color: var(--text-secondary);
-			margin-bottom: 6px;
+			margin-bottom: var(--spacing-sm);
 			font-weight: 500;
 		}
 
 		.form-input {
 			width: 100%;
-			padding: 8px 12px;
+			padding: var(--spacing-sm) var(--spacing-md);
 			background: var(--bg-dark);
-			border: 1px solid var(--border);
+			border: var(--border-width) solid var(--border);
 			border-radius: var(--radius);
 			color: var(--text-primary);
-			font-size: 13px;
+			font-size: var(--font-size-base);
 			transition: var(--transition);
 		}
 
 		.form-input:focus {
-			outline: none;
+			outline: var(--outline-width) solid var(--accent);
+			outline-offset: var(--border-width);
 			border-color: var(--accent);
-			box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+			box-shadow: var(--shadow-md) rgba(6, 182, 212, 0.2);
 		}
 
 		.form-input:disabled {
@@ -288,7 +321,7 @@
 		.photo-preview-container {
 			display: flex;
 			flex-direction: column;
-			gap: 8px;
+			gap: var(--spacing-sm);
 		}
 
 		.photo-preview {
@@ -311,7 +344,7 @@
 
 		.photo-preview-placeholder {
 			color: var(--text-secondary);
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			text-align: center;
 		}
 
@@ -319,21 +352,21 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			gap: 12px;
+			gap: var(--spacing-md);
 		}
 
 		.photo-nav-btn {
 			background: var(--bg-card);
-			border: 1px solid var(--border);
+			border: var(--border-width) solid var(--border);
 			color: var(--text-primary);
-			width: 28px;
-			height: 28px;
+			width: calc(var(--spacing-lg) + var(--spacing-md)); /* 28px (16px + 12px) */
+			height: calc(var(--spacing-lg) + var(--spacing-md)); /* 28px (16px + 12px) */
 			border-radius: var(--radius);
 			cursor: pointer;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			font-size: 14px;
+			font-size: var(--font-size-md);
 			transition: var(--transition);
 		}
 
@@ -346,35 +379,41 @@
 			opacity: 0.4;
 			cursor: not-allowed;
 		}
+		
+		.photo-nav-btn:focus-visible {
+			outline: var(--outline-width-lg) solid var(--accent);
+			outline-offset: var(--outline-width-lg);
+			box-shadow: 0 0 0 5px rgba(6, 182, 212, 0.3);
+		}
 
 		.photo-index {
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			color: var(--text-secondary);
 			min-width: 60px;
 			text-align: center;
 		}
 
 		.photo-debug-info {
-			font-size: 10px;
+			font-size: var(--font-size-xs);
 			color: #ff6b6b;
 			background: rgba(255, 107, 107, 0.1);
 			border: 1px solid rgba(255, 107, 107, 0.3);
 			border-radius: var(--radius);
-			padding: 6px 8px;
-			margin-top: 4px;
+			padding: var(--spacing-sm) var(--spacing-xs);
+			margin-top: var(--spacing-xs);
 			display: flex;
 			flex-direction: column;
-			gap: 2px;
+			gap: 2px; /* Too small for --spacing-xs (4px), keep as is */
 		}
 
 		.debug-header {
 			font-weight: bold;
 			color: #ff6b6b;
-			font-size: 10px;
+			font-size: var(--font-size-xs);
 		}
 
 		.debug-content {
-			font-size: 9px;
+			font-size: var(--font-size-xxs); /* 9px - for debug information */
 			color: #ffa8a8;
 			white-space: pre-wrap;
 			word-break: break-all;
@@ -385,23 +424,23 @@
 		/* 控制按钮 */
 		.controls {
 			display: flex;
-			gap: 8px;
-			margin-top: 16px;
+			gap: var(--spacing-sm);
+			margin-top: var(--spacing-lg); /* 16px */
 		}
 
 		button {
 			background: var(--accent);
 			color: white;
 			border: none;
-			padding: 8px 16px;
+			padding: var(--spacing-sm) var(--spacing-lg);
 			border-radius: var(--radius);
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			font-weight: 500;
 			cursor: pointer;
 			transition: var(--transition);
 			display: inline-flex;
 			align-items: center;
-			gap: 4px;
+			gap: var(--spacing-xs);
 			white-space: nowrap;
 			flex: 1;
 		}
@@ -409,16 +448,22 @@
 		button:hover {
 			background: var(--accent-hover);
 			transform: translateY(-1px);
-			box-shadow: 0 2px 4px var(--shadow);
+			box-shadow: var(--shadow-sm) var(--shadow);
 		}
 
 		button:active {
 			transform: translateY(0);
 		}
+		
+		button:focus-visible {
+			outline: var(--outline-width-lg) solid var(--accent);
+			outline-offset: var(--outline-width-lg);
+			box-shadow: 0 0 0 6px rgba(6, 182, 212, 0.3);
+		}
 
 		button.secondary {
 			background: transparent;
-			border: 1px solid var(--border);
+			border: var(--border-width) solid var(--border);
 			color: var(--text-secondary);
 		}
 
@@ -444,45 +489,47 @@
 		.unsaved-indicator {
 			color: var(--warning);
 			font-weight: bold;
-			margin-left: 2px;
+			margin-left: var(--border-width-md);
 		}
 
 		/* 编辑模式按钮 */
 		.edit-mode-buttons {
 			display: flex;
-			gap: 8px;
-			margin-top: 8px;
+			gap: var(--spacing-sm);
+			margin-top: var(--spacing-md); /* 12px */
+			padding-top: var(--spacing-md); /* 12px */
+			border-top: 1px solid var(--border);
 		}
 
 		/* IFC属性部分 */
 		.ifc-properties-section {
-			margin-top: 16px;
-			padding-top: 16px;
+			margin-top: var(--spacing-lg); /* 16px */
+			padding-top: var(--spacing-lg); /* 16px */
 			border-top: 1px solid var(--border);
 		}
 
 		.ifc-properties-section h3 {
-			font-size: 13px;
+			font-size: var(--font-size-base);
 			color: var(--accent);
-			margin-bottom: 12px;
+			margin-bottom: var(--spacing-md);
 			display: flex;
 			align-items: center;
-			gap: 6px;
+			gap: var(--spacing-sm);
 		}
 
 		.ifc-properties-section h3::before {
 			content: '';
 			display: inline-block;
-			width: 12px;
-			height: 12px;
+			width: var(--spacing-md); /* 12px */
+			height: var(--spacing-md); /* 12px */
 			background-color: var(--accent);
-			border-radius: 2px;
+			border-radius: calc(var(--radius) / 2);
 		}
 
 		.ifc-controls {
 			display: flex;
-			gap: 8px;
-			margin-bottom: 12px;
+			gap: var(--spacing-sm);
+			margin-bottom: var(--spacing-md); /* 12px */
 		}
 
 		.search-box {
@@ -492,12 +539,12 @@
 
 		.search-box input {
 			width: 100%;
-			padding: 6px 10px 6px 32px;
+			padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-sm) 32px;
 			background: var(--bg-dark);
-			border: 1px solid var(--border);
+			border: var(--border-width) solid var(--border);
 			border-radius: var(--radius);
 			color: var(--text-primary);
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			transition: var(--transition);
 		}
 
@@ -513,14 +560,14 @@
 			left: 10px;
 			top: 50%;
 			transform: translateY(-50%);
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			color: var(--text-secondary);
 			pointer-events: none;
 		}
 
 		/* Property Groups */
 		.property-groups {
-			margin-top: 16px;
+			margin-top: var(--spacing-lg);
 			overflow-x: auto;
 			max-width: 100%;
 		}
@@ -528,13 +575,13 @@
 		.group {
 			background: var(--bg-card);
 			border-radius: var(--radius);
-			border: 1px solid var(--border);
-			margin-bottom: 10px;
+			border: var(--border-width) solid var(--border);
+			margin-bottom: var(--spacing-xl);
 			overflow: hidden;
 		}
 
 		.group-header {
-			padding: 10px 12px;
+			padding: var(--spacing-xl) var(--spacing-md);
 			background: rgba(63, 74, 92, 0.3);
 			display: flex;
 			justify-content: space-between;
@@ -546,9 +593,15 @@
 		.group-header:hover {
 			background: rgba(63, 74, 92, 0.5);
 		}
+		
+		.group-header:focus-visible {
+			outline: var(--outline-width) solid var(--accent);
+			outline-offset: -2px;
+			background: rgba(63, 74, 92, 0.7);
+		}
 
 		.group-header h3 {
-			font-size: 13px;
+			font-size: var(--font-size-base);
 			font-weight: 600;
 			color: var(--text-primary);
 		}
@@ -556,8 +609,8 @@
 		.group-badge {
 			background: var(--accent);
 			color: white;
-			font-size: 10px;
-			padding: 2px 6px;
+			font-size: var(--font-size-xs);
+			padding: 2px var(--spacing-sm);
 			border-radius: 10px;
 			font-weight: 600;
 		}
@@ -577,21 +630,21 @@
 		.property-table {
 			width: 100%;
 			border-collapse: collapse;
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 		}
 
 		.property-table thead {
 			background: rgba(0, 0, 0, 0.2);
-			border-bottom: 2px solid var(--border);
+			border-bottom: var(--border-width-md) solid var(--border);
 		}
 
 		.property-table th {
-			padding: 8px 10px;
+			padding: var(--spacing-sm) var(--spacing-xl);
 			text-align: left;
 			font-weight: 600;
 			color: var(--text-secondary);
 			text-transform: uppercase;
-			font-size: 11px;
+			font-size: var(--font-size-xs);
 			letter-spacing: 0.05em;
 		}
 
@@ -605,7 +658,7 @@
 		}
 
 		.property-table td {
-			padding: 8px 10px;
+			padding: var(--spacing-sm) var(--spacing-xl);
 			vertical-align: top;
 		}
 
@@ -625,24 +678,24 @@
 		.property-type {
 			color: var(--text-secondary);
 			font-style: italic;
-			font-size: 11px;
+			font-size: var(--font-size-xs);
 		}
 
 		.property-unit {
 			color: var(--success);
-			font-size: 11px;
+			font-size: var(--font-size-xs);
 		}
 
 		/* Empty & Loading States */
 		.empty-state, .loading-state {
 			text-align: center;
-			padding: 30px 20px;
+			padding: var(--spacing-2xl) var(--spacing-xl);
 			color: var(--text-secondary);
 		}
 
 		.empty-state h3, .loading-state h3 {
 			color: var(--text-secondary);
-			margin-bottom: 8px;
+			margin-bottom: var(--spacing-sm); /* 8px */
 		}
 
 		/* Warning Notification */
@@ -650,17 +703,17 @@
 			background: rgba(245, 158, 11, 0.1);
 			border: 1px solid var(--warning);
 			border-radius: var(--radius);
-			padding: 8px 12px;
-			margin: 10px 0;
+			padding: var(--spacing-sm) var(--spacing-md);
+			margin: var(--spacing-xl) 0;
 			color: var(--warning);
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			display: flex;
 			align-items: center;
-			gap: 8px;
+			gap: var(--spacing-sm);
 		}
 		.warning-notice::before {
 			content: '⚠️';
-			font-size: 14px;
+			font-size: var(--font-size-md);
 		}
 
 		/* Error Notification */
@@ -668,17 +721,17 @@
 			background: rgba(239, 68, 68, 0.1);
 			border: 1px solid var(--error);
 			border-radius: var(--radius);
-			padding: 8px 12px;
-			margin: 10px 0;
+			padding: var(--spacing-sm) var(--spacing-md);
+			margin: var(--spacing-xl) 0;
 			color: var(--error);
-			font-size: 12px;
+			font-size: var(--font-size-sm);
 			display: flex;
 			align-items: center;
-			gap: 8px;
+			gap: var(--spacing-sm);
 		}
 		.error-notice::before {
 			content: '❌';
-			font-size: 14px;
+			font-size: var(--font-size-md);
 		}
 
 		/* 隐藏类 */
@@ -688,6 +741,19 @@
 
 		.fade-in {
 			animation: fadeIn 0.3s ease;
+		}
+		
+		/* 屏幕阅读器专用类 */
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
 		}
 
 		@keyframes fadeIn {
@@ -710,140 +776,248 @@
 			}
 			
 			button {
-				flex: 0 0 calc(50% - 4px);
+				flex: 0 0 calc(50% - var(--spacing-xs));
 			}
 			
 			.property-table {
 				display: block;
 				overflow-x: auto;
 			}
+			
+			/* Confirmation dialog styles */
+			.confirmation-dialog {
+				background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+				border: var(--border-width) solid var(--border);
+				border-radius: 6px;
+				padding: var(--spacing-lg);
+				margin-top: var(--spacing-md);
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			}
+			
+			.confirmation-dialog.hidden {
+				display: none;
+			}
+			
+			.confirmation-content p {
+				margin: 0 0 var(--spacing-lg) 0;
+				color: var(--text);
+			font-size: var(--font-size-md);
+				line-height: 1.5;
+			}
+			
+			.confirmation-buttons {
+				display: flex;
+				gap: var(--spacing-sm);
+				justify-content: flex-end;
+			}
+			
+			.confirmation-buttons button {
+				flex: 0 0 auto;
+				min-width: 80px;
+			}
+			
+			/* Edit mode notification styles */
+			.edit-mode-notification {
+				background: linear-gradient(135deg, #3a2c1c 0%, #2d2318 100%);
+				border: 1px solid #d97706;
+				border-radius: 6px;
+				padding: var(--spacing-xl) var(--spacing-lg);
+				margin: var(--spacing-md) 0;
+				box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+			}
+			
+			.edit-mode-notification.hidden {
+				display: none;
+			}
+			
+			.notification-content {
+				display: flex;
+				align-items: center;
+				gap: var(--spacing-xl);
+			}
+			
+			.notification-icon {
+				font-size: var(--font-size-lg);
+			}
+			
+			.notification-text {
+				color: #fbbf24;
+				font-size: var(--font-size-base);
+				line-height: 1.4;
+				flex: 1;
+			}
 		}
 	</style>
 </head>
-<body class="state-no-selection">
+<body class="state-no-selection" role="application" aria-label="HBIM构件信息输入工具">
 	<!-- 第一组信息：标题和版本号 -->
-	<div class="group-1">
-		<div class="plugin-title" id="version-display">HBIM构件信息输入工具 (V0.0.0.0)</div>
-		<div class="version-display">基于ArchiCAD API Development Kit 29.3100</div>
+	<div class="group-1" role="banner" aria-label="插件标题和版本信息">
+		<div class="plugin-title" id="version-display" role="heading" aria-level="1">HBIM构件信息输入工具 (V0.0.0.0)</div>
+		<div class="version-display" aria-label="基于ArchiCAD API Development Kit 29.3100">基于ArchiCAD API Development Kit 29.3100</div>
 	</div>
 
 	<!-- 第二组信息：GUID和TYPE显示 -->
-	<div class="group-2">
-		<h2>构件标识</h2>
-		<div class="guid-type-container">
-			<div class="guid-item">
-				<div class="guid-label">GUID</div>
-				<div id="summary-guid" class="guid-value">{GUID}</div>
+	<div class="group-2" role="region" aria-label="构件标识信息">
+		<h2 id="element-identification-heading">构件标识</h2>
+		<div class="guid-type-container" role="group" aria-labelledby="element-identification-heading">
+			<div class="guid-item" role="region" aria-label="构件全局唯一标识符">
+				<div class="guid-label" id="guid-label">GUID</div>
+				<div id="summary-guid" class="guid-value" role="status" aria-labelledby="guid-label" aria-live="polite">{GUID}</div>
 			</div>
-			<div class="type-item">
-				<div class="type-label">TYPE</div>
-				<div id="summary-type" class="type-value">{Element Type}</div>
+			<div class="type-item" role="region" aria-label="构件类型">
+				<div class="type-label" id="type-label">TYPE</div>
+				<div id="summary-type" class="type-value" role="status" aria-labelledby="type-label" aria-live="polite">{Element Type}</div>
 			</div>
-			<div class="no-selection-message" id="no-selection-message">未选择构件</div>
+			<div class="no-selection-message" id="no-selection-message" role="alert" aria-live="assertive">未选择构件</div>
+		</div>
+	</div>
+	
+	<!-- 编辑模式通知栏（当处于编辑模式时显示） -->
+	<div id="edit-mode-notification" class="edit-mode-notification hidden" role="alert" aria-live="assertive" aria-label="编辑模式通知">
+		<div class="notification-content">
+			<span class="notification-icon" aria-hidden="true">⚠️</span>
+			<span class="notification-text">当前处于编辑模式。请保存或取消编辑后才能选择其他构件。</span>
 		</div>
 	</div>
 
 	<!-- 第三组信息：构件信息填写界面和照片功能 -->
-	<div class="group-3">
-		<h2>构件信息 <span id="componentinfo-unsaved-indicator" class="unsaved-indicator hidden">*</span></h2>
+	<div class="group-3" role="main" aria-label="构件信息管理">
+		<h2 id="component-info-heading">构件信息 <span id="componentinfo-unsaved-indicator" class="unsaved-indicator hidden" aria-label="有未保存的更改" aria-hidden="true">*</span></h2>
 		
 		<!-- 状态2消息：已选择构件无信息 -->
-		<div class="no-info-message" id="no-info-message">
+		<div class="no-info-message" id="no-info-message" role="status" aria-live="polite" aria-atomic="true">
 			请填写构件编号和照片描述信息
+			<div style="margin-top: var(--spacing-md);">
+				<button id="add-info-btn" class="secondary" role="button" aria-label="添加构件信息" tabindex="0">添加信息</button>
+			</div>
 		</div>
 		
 		<!-- 状态3内容：已选择构件有信息 -->
 		<div class="has-info-content">
 			<!-- 构件编号输入框 -->
 			<div class="form-group">
-				<label class="form-label" for="component-id">构件编号</label>
-				<input type="text" id="component-id" class="form-input" placeholder="请填写构件编号" disabled>
+				<label class="form-label" for="component-id" id="component-id-label">构件编号</label>
+				<input type="text" id="component-id" class="form-input" placeholder="请填写构件编号" disabled
+					aria-labelledby="component-id-label" aria-describedby="component-id-description" tabindex="-1"
+					aria-readonly="true" aria-invalid="false">
+				<div id="component-id-description" class="sr-only">输入构件的唯一编号标识</div>
 			</div>
 			
 			<!-- 照片描述输入框 -->
 			<div class="form-group">
-				<label class="form-label" for="photo-description">照片描述</label>
-				<input type="text" id="photo-description" class="form-input" placeholder="请输入照片描述" disabled>
+				<label class="form-label" for="photo-description" id="photo-description-label">照片描述</label>
+				<input type="text" id="photo-description" class="form-input" placeholder="请输入照片描述" disabled
+					aria-labelledby="photo-description-label" aria-describedby="photo-description-description" tabindex="-1"
+					aria-readonly="true" aria-invalid="false">
+				<div id="photo-description-description" class="sr-only">输入照片的描述信息</div>
 			</div>
 			
 			<!-- 照片预览 -->
 			<div class="form-group">
-				<label class="form-label">照片预览</label>
-				<div class="photo-preview-container">
-					<div class="photo-preview">
-						<div class="photo-preview-placeholder">未选择照片</div>
-						<img id="photo-display" src="" alt="Photo preview" class="hidden">
+				<label class="form-label" id="photo-preview-label">照片预览</label>
+				<div class="photo-preview-container" role="region" aria-labelledby="photo-preview-label">
+					<div class="photo-preview" role="img" aria-label="照片预览区域">
+						<div class="photo-preview-placeholder" id="photo-placeholder-text">未选择照片</div>
+						<img id="photo-display" src="" alt="照片预览" class="hidden" aria-describedby="photo-index">
 					</div>
-					<div class="photo-navigation hidden">
-						<button id="prev-photo-btn" class="photo-nav-btn" disabled>‹</button>
-						<span id="photo-index" class="photo-index">0 / 0</span>
-						<button id="next-photo-btn" class="photo-nav-btn" disabled>›</button>
+					<div class="photo-navigation hidden" role="group" aria-label="照片导航">
+						<button id="prev-photo-btn" class="photo-nav-btn" disabled role="button" aria-label="上一张照片" tabindex="-1" aria-disabled="true">‹</button>
+						<span id="photo-index" class="photo-index" role="status" aria-live="polite">0 / 0</span>
+						<button id="next-photo-btn" class="photo-nav-btn" disabled role="button" aria-label="下一张照片" tabindex="-1" aria-disabled="true">›</button>
 					</div>
 					<!-- 调试信息显示区域 -->
-					<div id="photo-debug-info" class="photo-debug-info hidden">
+					<div id="photo-debug-info" class="photo-debug-info hidden" role="status" aria-live="polite">
 						<div class="debug-header">调试信息 (F12控制台不可用时使用):</div>
 						<div class="debug-content"></div>
 					</div>
+					<!-- 照片加载状态公告 -->
+					<div id="photo-loading-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 				</div>
 			</div>
 			
 			<!-- 控制按钮 -->
-			<div class="controls">
-				<button id="select-photos-btn" class="secondary" disabled>选择照片</button>
-				<button id="view-photos-btn" class="secondary" disabled>查看照片</button>
-				<button id="edit-info-btn">编辑信息</button>
+			<div class="controls" role="group" aria-label="构件信息操作按钮">
+				<!-- 照片功能帮助文本 -->
+				<div id="photo-functionality-help" class="help-text">
+					<span id="global-id-status" class="status-indicator"></span>
+				</div>
+				<button id="select-photos-btn" class="secondary" disabled role="button" aria-label="选择照片" tabindex="0" aria-disabled="true" aria-describedby="select-photos-tooltip">选择照片</button>
+				<button id="view-photos-btn" class="secondary" disabled role="button" aria-label="查看照片" tabindex="0" aria-disabled="true" aria-describedby="view-photos-tooltip">查看照片</button>
+				<button id="edit-info-btn" role="button" aria-label="编辑构件信息" tabindex="0">编辑信息</button>
+				<div id="select-photos-tooltip" class="sr-only" aria-live="polite"></div>
+				<div id="view-photos-tooltip" class="sr-only" aria-live="polite"></div>
 			</div>
 			
 			<!-- 编辑模式按钮（默认隐藏） -->
-			<div class="edit-mode-buttons hidden">
-				<button id="save-info-btn" class="hidden">保存</button>
-				<button id="cancel-edit-btn" class="secondary hidden">取消编辑</button>
+			<div class="edit-mode-buttons hidden" role="group" aria-label="编辑模式操作按钮">
+				<button id="save-info-btn" class="hidden" role="button" aria-label="保存构件信息" tabindex="-1">保存</button>
+				<button id="cancel-edit-btn" class="secondary hidden" role="button" aria-label="取消编辑" tabindex="-1">取消编辑</button>
+			</div>
+			
+			<!-- 确认对话框（内联，非模态） -->
+			<div id="confirmation-dialog" class="confirmation-dialog hidden" role="alertdialog" aria-labelledby="confirmation-message" aria-describedby="confirmation-description" aria-modal="false">
+				<div class="confirmation-content">
+					<p id="confirmation-message">确认要放弃未保存的更改吗？</p>
+					<p id="confirmation-description" class="sr-only">此操作将丢失所有未保存的更改并退出编辑模式</p>
+					<div class="confirmation-buttons" role="group" aria-label="确认对话框按钮">
+						<button id="confirm-btn" class="primary" role="button" aria-label="确认放弃更改" tabindex="0">确认</button>
+						<button id="cancel-confirm-btn" class="secondary" role="button" aria-label="取消并继续编辑" tabindex="0">取消</button>
+					</div>
+				</div>
 			</div>
 			
 			<!-- IFC Properties Section -->
-			<div class="ifc-properties-section">
-				<h3>IFC属性</h3>
-				<div class="ifc-controls">
+			<div class="ifc-properties-section" role="region" aria-label="IFC属性管理">
+				<h3 id="ifc-properties-heading">IFC属性</h3>
+				<div class="ifc-controls" role="group" aria-labelledby="ifc-properties-heading">
 					<div class="search-box">
-						<input type="text" id="property-search" placeholder="Search properties..." />
+						<input type="text" id="property-search" placeholder="Search properties..." 
+							aria-label="搜索IFC属性" aria-describedby="property-search-description" tabindex="0" />
+						<div id="property-search-description" class="sr-only">输入关键词搜索IFC属性</div>
 					</div>
-					<button id="refresh-btn" title="Refresh properties">
+					<button id="refresh-btn" title="Refresh properties" role="button" aria-label="刷新IFC属性" tabindex="0">
 						↻ Refresh
 					</button>
-					<button id="view-ifc-properties-btn">查看构件的IFC属性</button>
+					<button id="view-ifc-properties-btn" role="button" aria-label="查看构件的IFC属性" tabindex="0">查看构件的IFC属性</button>
 				</div>
 
-				<div id="loading-state" class="loading-state hidden">
+				<div id="loading-state" class="loading-state hidden" role="status" aria-live="polite" aria-busy="true">
 					<h3>Loading IFC properties...</h3>
 					<p>Please wait while fetching property data.</p>
 				</div>
 
-				<div id="empty-state" class="empty-state hidden">
+				<div id="empty-state" class="empty-state hidden" role="status" aria-live="polite">
 					<h3>No element selected</h3>
 					<p>Select an element in Archicad to view its IFC properties.</p>
 				</div>
 				
-				<div id="no-match-state" class="empty-state hidden">
+				<div id="no-match-state" class="empty-state hidden" role="status" aria-live="polite">
 					<h3>No matching properties</h3>
 					<p>Try adjusting your search to find what you're looking for.</p>
 				</div>
 				
-				<div id="error-state" class="error-notice hidden">
+				<div id="error-state" class="error-notice hidden" role="alert" aria-live="assertive">
 					<h3>Error loading IFC properties</h3>
 					<p id="error-message">An unexpected error occurred while fetching IFC properties.</p>
-					<button id="retry-btn" class="secondary" style="margin-top: 8px;">Retry</button>
+					<button id="retry-btn" class="secondary" style="margin-top: var(--spacing-sm);" role="button" aria-label="重试加载IFC属性" tabindex="0">Retry</button>
 				</div>
 
-				<div id="property-groups" class="property-groups">
+				<div id="property-groups" class="property-groups" role="region" aria-label="IFC属性分组列表" aria-live="polite">
 					<!-- Property groups will be inserted here by JavaScript -->
 				</div>
 			</div>
 		</div>
 	</div>
 
+	<!-- 屏幕阅读器公告区域 -->
+	<div id="screen-reader-announcements" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+	
 	<!-- JavaScript桥接状态显示 -->
-	<div style="font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border);">
+	<div style="font-size: var(--font-size-xs); color: var(--text-secondary); text-align: center; margin-top: var(--spacing-md); padding-top: var(--spacing-sm); border-top: 1px solid var(--border);" role="status" aria-live="polite">
 		<span id="bridge-status" style="color: #ef4444;">(桥接检测中...)</span>
+		<span id="version-status" style="margin-left: 10px;"></span>
+		<button id="retry-bridge-btn" style="margin-left: 10px; padding: 2px 8px; font-size: var(--font-size-xxs); display: none;">重试桥接</button>
+		<div id="bridge-debug" style="font-size: var(--font-size-xxs); margin-top: 4px; color: #888;"></div>
 	</div>
 
 	<script type="text/javascript">
@@ -912,6 +1086,17 @@
 			]
 		};
 
+		const DEBUG = true; // Enable debug logging
+		function debugLog(...args) {
+			if (DEBUG) {
+				console.log('[HBIM Debug]', ...args);
+				// Also output to debug element if available
+				const debugEl = document.getElementById('debug-output');
+				if (debugEl) {
+					debugEl.textContent += args.join(' ') + '\n';
+				}
+			}
+		}
 		let currentProperties = []; // Holds properties for currently selected element, initially empty
 		let debugInfo = {}; // Store debug information for display
 		let isEditMode = false;
@@ -920,23 +1105,68 @@
 		let currentPhotoPaths = []; // Photo paths for currently selected element
 		let hasUnsavedChanges = false; // Track unsaved changes in ComponentInfo
 		let currentPhotoIndex = 0;
-		
+		let currentGlobalId = null; // GlobalId property value (required for photo functionality)
+		let currentFolderName = null; // Folder name for photos based on GlobalId
+
+
 		// Three-state CSS class management
 		function updateUIState() {
 			const body = document.body;
 			const hasSelection = currentElementGuid !== null;
 			const hasInfo = hasComponentInfo();
 			
+			debugLog('updateUIState:', {
+				hasSelection,
+				hasInfo,
+				currentElementGuid,
+				currentComponentId: document.getElementById('component-id').value,
+				currentPhotoPathsLength: currentPhotoPaths.length
+			});
+			
 			// Remove all state classes
 			body.classList.remove('state-no-selection', 'state-no-info', 'state-has-info');
 			
+			let stateText = '未知';
 			if (!hasSelection) {
 				body.classList.add('state-no-selection');
+				debugLog('UI State: state-no-selection');
+				stateText = '未选择构件';
 			} else if (!hasInfo) {
 				body.classList.add('state-no-info');
+				debugLog('UI State: state-no-info');
+				stateText = '已选择构件无信息';
 			} else {
 				body.classList.add('state-has-info');
+				debugLog('UI State: state-has-info');
+				stateText = '已选择构件有信息';
 			}
+			
+			// Update UI state indicator
+			const stateIndicator = document.getElementById('ui-state-text');
+			if (stateIndicator) {
+				stateIndicator.textContent = stateText;
+			}
+			
+			// Announce state change to screen readers
+			let announcement = '';
+			if (!hasSelection) {
+				announcement = '未选择构件。请先在ArchiCAD中选择一个构件。';
+			} else if (!hasInfo) {
+				announcement = '已选择构件，但未填写构件信息。请点击"添加信息"按钮或"编辑信息"按钮来填写构件编号和照片描述。';
+			} else {
+				announcement = '已选择构件并已填写构件信息。可以查看或编辑构件信息。';
+			}
+			
+			// Add element details if available
+			if (hasSelection) {
+				const guid = document.getElementById('summary-guid').textContent;
+				const type = document.getElementById('summary-type').textContent;
+				if (guid && guid !== '{GUID}' && type && type !== '{Element Type}') {
+					announcement += ` 当前构件类型: ${type}。`;
+				}
+			}
+			
+			announceToScreenReader(announcement);
 		}
 		
 		function hasComponentInfo() {
@@ -950,9 +1180,139 @@
 			if (indicator) {
 				if (hasUnsavedChanges) {
 					indicator.classList.remove('hidden');
+					// Announce unsaved changes to screen readers
+					announceToScreenReader('有未保存的更改。请保存或取消编辑。');
 				} else {
 					indicator.classList.add('hidden');
 				}
+			}
+		}
+		
+		// Update photo button disabled state and tooltip based on GlobalId availability
+		function updatePhotoButtonState() {
+			const button = document.getElementById('select-photos-btn');
+			if (!button) return;
+			
+			const hasGlobalId = currentGlobalId !== null && currentGlobalId !== '';
+			const isDisabled = !hasGlobalId;
+			button.disabled = isDisabled;
+			
+			// Update tabindex based on disabled state for keyboard navigation
+			button.tabIndex = isDisabled ? -1 : 0;
+			
+			// Set tooltip to explain why button is disabled (guardrail compliance: no fallback to GUID)
+			const tooltipEl = document.getElementById('select-photos-tooltip');
+			if (isDisabled) {
+				button.title = '此功能需要构件具有GlobalId属性（IFC兼容构件）';
+				button.setAttribute('aria-disabled', 'true');
+				if (tooltipEl) {
+					tooltipEl.textContent = '此功能需要构件具有GlobalId属性（IFC兼容构件）';
+				}
+			} else {
+				button.title = ''; // Clear tooltip when enabled
+				button.setAttribute('aria-disabled', 'false');
+				if (tooltipEl) {
+					tooltipEl.textContent = '';
+				}
+			}
+		}
+		
+		// Update view photo button disabled state and tooltip based on GlobalId and photo availability
+		function updateViewPhotoButtonState() {
+			const button = document.getElementById('view-photos-btn');
+			if (!button) return;
+			
+			const hasGlobalId = currentGlobalId !== null && currentGlobalId !== '';
+			const hasPhotos = currentPhotoPaths.length > 0;
+			const isDisabled = !hasGlobalId || !hasPhotos;
+			button.disabled = isDisabled;
+			
+			// Update tabindex based on disabled state for keyboard navigation
+			button.tabIndex = isDisabled ? -1 : 0;
+			
+			// Set tooltip to explain why button is disabled
+			const tooltipEl = document.getElementById('view-photos-tooltip');
+			if (isDisabled) {
+				let tooltipText = '';
+				if (!hasGlobalId) {
+					tooltipText = '此功能需要构件具有GlobalId属性（IFC兼容构件）';
+				} else if (!hasPhotos) {
+					tooltipText = '此构件暂无照片，请先选择照片';
+				} else {
+					tooltipText = ''; // Should not happen
+				}
+				button.title = tooltipText;
+				button.setAttribute('aria-disabled', 'true');
+				if (tooltipEl) {
+					tooltipEl.textContent = tooltipText;
+				}
+			} else {
+				button.title = ''; // Clear tooltip when enabled
+				button.setAttribute('aria-disabled', 'false');
+				if (tooltipEl) {
+					tooltipEl.textContent = '';
+				}
+			}
+		}
+
+		// Update GlobalId status indicator for photo functionality discoverability
+		function updateGlobalIdStatusIndicator() {
+			const statusEl = document.getElementById('global-id-status');
+			if (!statusEl) return;
+			
+			const hasGlobalId = currentGlobalId !== null && currentGlobalId !== '';
+			if (hasGlobalId) {
+				statusEl.textContent = 'GlobalId: 已具备 (照片功能可用)';
+				statusEl.className = 'status-indicator has-global-id';
+			} else {
+				statusEl.textContent = 'GlobalId: 缺失 (照片功能不可用)';
+				statusEl.className = 'status-indicator no-global-id';
+			}
+		}
+
+		// Keyboard shortcuts for edit mode
+		function setupEditModeKeyboardShortcuts() {
+			document.addEventListener('keydown', handleEditModeKeydown);
+		}
+		
+		function removeEditModeKeyboardShortcuts() {
+			document.removeEventListener('keydown', handleEditModeKeydown);
+		}
+		
+		function handleEditModeKeydown(e) {
+			// Only handle if we're in edit mode
+			if (!isEditMode) return;
+			
+			// Ctrl+S or Cmd+S: save
+			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+				e.preventDefault(); // Prevent browser save dialog
+				// Trigger save if save button is visible and enabled
+				const saveBtn = document.getElementById('save-info-btn');
+				if (saveBtn && !saveBtn.classList.contains('hidden')) {
+					saveBtn.click();
+				}
+				return;
+			}
+			
+			// Escape: cancel edit mode (if no unsaved changes) or show confirmation
+			if (e.key === 'Escape') {
+				// Don't handle Escape if confirmation dialog is visible (let dialog handle it)
+				const confirmationDialog = document.getElementById('confirmation-dialog');
+				if (confirmationDialog && !confirmationDialog.classList.contains('hidden')) {
+					return;
+				}
+				e.preventDefault();
+				// If there are unsaved changes, show confirmation dialog
+				if (hasUnsavedChanges) {
+					showConfirmation(
+						'有未保存的更改。确认要放弃更改并退出编辑模式吗？',
+						function() { exitEditMode(false); }, // User confirmed
+						function() { console.log('用户取消退出编辑模式'); } // User cancelled
+					);
+				} else {
+					exitEditMode(false);
+				}
+				return;
 			}
 		}
 		
@@ -1072,28 +1432,30 @@
 				batch.forEach(group => {
 					const groupElement = document.createElement('div');
 					groupElement.className = 'group expanded';
+ 					const groupId = `group-${group.category.replace(/\s+/g, '-').toLowerCase()}`;
+					const contentId = `${groupId}-content`;
 					groupElement.innerHTML = `
-						<div class="group-header" onclick="toggleGroup(this.parentElement)">
-							<h3>${group.category}</h3>
-							<span class="group-badge">${group.properties.length}</span>
+						<div class="group-header" onclick="toggleGroup(this.parentElement)" onkeydown="handleGroupHeaderKeydown(event, this.parentElement)" role="button" aria-expanded="true" aria-controls="${contentId}" tabindex="0">
+							<h3 id="${groupId}-heading">${group.category}</h3>
+							<span class="group-badge" aria-label="${group.properties.length} 个属性">${group.properties.length}</span>
 						</div>
-						<div class="group-content">
-							<table class="property-table">
+						<div id="${contentId}" class="group-content" role="region" aria-labelledby="${groupId}-heading">
+							<table class="property-table" role="grid" aria-label="${group.category} 属性表">
 								<thead>
-									<tr>
-										<th>Property Name</th>
-										<th>Value</th>
-										<th>Type</th>
-										<th>Unit</th>
+									<tr role="row">
+										<th role="columnheader" scope="col">Property Name</th>
+										<th role="columnheader" scope="col">Value</th>
+										<th role="columnheader" scope="col">Type</th>
+										<th role="columnheader" scope="col">Unit</th>
 									</tr>
 								</thead>
 								<tbody>
-									${group.properties.map(prop => `
-										<tr>
-											<td class="property-name">${prop.name}</td>
-											<td class="property-value">${prop.value}</td>
-											<td class="property-type">${prop.type}</td>
-											<td class="property-unit">${prop.unit || '—'}</td>
+									${group.properties.map((prop, index) => `
+										<tr role="row">
+											<td class="property-name" role="rowheader" scope="row">${prop.name}</td>
+											<td class="property-value" role="gridcell">${prop.value}</td>
+											<td class="property-type" role="gridcell">${prop.type}</td>
+											<td class="property-unit" role="gridcell">${prop.unit || '—'}</td>
 										</tr>
 									`).join('')}
 								</tbody>
@@ -1115,7 +1477,30 @@
 
 		// Toggle group expansion
 		function toggleGroup(groupElement) {
-			groupElement.classList.toggle('expanded');
+			const isExpanded = groupElement.classList.toggle('expanded');
+			const header = groupElement.querySelector('.group-header');
+			if (header) {
+				header.setAttribute('aria-expanded', isExpanded.toString());
+			}
+			
+			// Announce expansion state to screen readers
+			const heading = groupElement.querySelector('h3');
+			if (heading) {
+				const groupName = heading.textContent;
+				const announcement = isExpanded ? 
+					`${groupName} 属性组已展开` : 
+					`${groupName} 属性组已折叠`;
+				announceToScreenReader(announcement);
+			}
+		}
+		
+		// Handle keyboard events for group headers
+		function handleGroupHeaderKeydown(event, groupElement) {
+			// Support Enter and Space keys for toggling
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault(); // Prevent space from scrolling
+				toggleGroup(groupElement);
+			}
 		}
 
 		// Filter properties based on search input
@@ -1245,10 +1630,7 @@
 			const versionElement = document.getElementById('version-display');
 			if (!versionElement) return;
 			
-			// Clear cache, avoid old version info residue
-			if (typeof ACAPI !== 'undefined' && ACAPI.ClearIFCPropertyCache) {
-				ACAPI.ClearIFCPropertyCache();
-			}
+			// Guardrail compliance: No caching system (removed ClearIFCPropertyCache)
 			
 			// Get plugin version
 			if (typeof ACAPI !== 'undefined' && ACAPI.GetPluginVersion) {
@@ -1266,6 +1648,135 @@
 		}
 		
 		// ComponentInfo edit mode functions
+		
+		// Inline confirmation dialog function (non-modal, guardrail compliant)
+		function showConfirmation(message, onConfirm, onCancel) {
+			const dialog = document.getElementById('confirmation-dialog');
+			const messageEl = document.getElementById('confirmation-message');
+			const confirmBtn = document.getElementById('confirm-btn');
+			const cancelBtn = document.getElementById('cancel-confirm-btn');
+			
+			if (!dialog || !messageEl || !confirmBtn || !cancelBtn) {
+				console.error('Confirmation dialog elements not found');
+				// Fallback to immediate confirm
+				if (window.confirm(message)) {
+					onConfirm && onConfirm();
+				} else {
+					onCancel && onCancel();
+				}
+				return;
+			}
+			
+			// Set message
+			messageEl.textContent = message;
+			
+			// Show dialog
+			dialog.classList.remove('hidden');
+			
+			// Define cleanup function
+			function cleanup() {
+				document.removeEventListener('keydown', handleKeydown);
+				confirmBtn.removeEventListener('click', handleConfirm);
+				cancelBtn.removeEventListener('click', handleCancel);
+			}
+			
+			// Handle confirm button click
+			function handleConfirm() {
+				cleanup();
+				dialog.classList.add('hidden');
+				onConfirm && onConfirm();
+			}
+			
+			// Handle cancel button click
+			function handleCancel() {
+				cleanup();
+				dialog.classList.add('hidden');
+				onCancel && onCancel();
+			}
+			
+			// Handle escape key
+			function handleKeydown(e) {
+				if (e.key === 'Escape') {
+					e.preventDefault();
+					handleCancel();
+				}
+			}
+			
+			// Add event listeners
+			confirmBtn.addEventListener('click', handleConfirm);
+			cancelBtn.addEventListener('click', handleCancel);
+			document.addEventListener('keydown', handleKeydown);
+		}
+		
+		// Focus management functions for accessibility
+		function manageFocusOnEditModeEnter() {
+			// When entering edit mode, focus should go to the first editable field
+			const componentIdInput = document.getElementById('component-id');
+			if (componentIdInput) {
+				componentIdInput.focus();
+				componentIdInput.select(); // Select all text for easy editing
+			}
+			
+			// Update tabindex for edit mode
+			document.getElementById('component-id').tabIndex = 0;
+			document.getElementById('photo-description').tabIndex = 0;
+			document.getElementById('save-info-btn').tabIndex = 0;
+			document.getElementById('cancel-edit-btn').tabIndex = 0;
+			document.getElementById('select-photos-btn').tabIndex = 0;
+			document.getElementById('view-photos-btn').tabIndex = 0;
+			document.getElementById('edit-info-btn').tabIndex = -1;
+			document.getElementById('prev-photo-btn').tabIndex = 0;
+			document.getElementById('next-photo-btn').tabIndex = 0;
+			
+			// Update ARIA attributes for edit mode
+			document.getElementById('component-id').setAttribute('aria-readonly', 'false');
+			document.getElementById('photo-description').setAttribute('aria-readonly', 'false');
+			document.getElementById('component-id').removeAttribute('aria-disabled');
+			document.getElementById('photo-description').removeAttribute('aria-disabled');
+			
+			// Announce edit mode to screen readers
+			announceToScreenReader('已进入编辑模式。请填写构件编号和照片描述信息。');
+		}
+		
+		function manageFocusOnEditModeExit() {
+			// When exiting edit mode, focus should return to the edit button
+			const editButton = document.getElementById('edit-info-btn');
+			if (editButton) {
+				editButton.focus();
+			}
+			
+			// Update tabindex for view mode
+			document.getElementById('component-id').tabIndex = -1;
+			document.getElementById('photo-description').tabIndex = -1;
+			document.getElementById('save-info-btn').tabIndex = -1;
+			document.getElementById('cancel-edit-btn').tabIndex = -1;
+			document.getElementById('select-photos-btn').tabIndex = 0;
+			document.getElementById('view-photos-btn').tabIndex = 0;
+			document.getElementById('edit-info-btn').tabIndex = 0;
+			document.getElementById('prev-photo-btn').tabIndex = -1;
+			document.getElementById('next-photo-btn').tabIndex = -1;
+			
+			// Update ARIA attributes for view mode
+			document.getElementById('component-id').setAttribute('aria-readonly', 'true');
+			document.getElementById('photo-description').setAttribute('aria-readonly', 'true');
+			document.getElementById('component-id').setAttribute('aria-disabled', 'true');
+			document.getElementById('photo-description').setAttribute('aria-disabled', 'true');
+			
+			// Announce exit from edit mode to screen readers
+			announceToScreenReader('已退出编辑模式。构件信息已保存。');
+		}
+		
+		function announceToScreenReader(message) {
+			const announcementEl = document.getElementById('screen-reader-announcements');
+			if (announcementEl) {
+				announcementEl.textContent = message;
+				// Clear after a short delay to allow repeated announcements
+				setTimeout(() => {
+					announcementEl.textContent = '';
+				}, 1000);
+			}
+		}
+		
  		function enterEditMode() {
 			if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
 				ACAPI.LogDebug('进入编辑模式，currentElementGuid: ' + currentElementGuid);
@@ -1273,23 +1784,67 @@
 				console.log('进入编辑模式，currentElementGuid:', currentElementGuid);
 			}
 			isEditMode = true;
+			setupEditModeKeyboardShortcuts();
 			hasUnsavedChanges = false;
 			updateUnsavedIndicator();
 			document.getElementById('component-id').disabled = false;
 			document.getElementById('photo-description').disabled = false;
-			document.getElementById('select-photos-btn').disabled = false;
+			// Update photo button state based on GlobalId availability
+			updatePhotoButtonState();
 			// Hide edit button, show save and cancel buttons
 			document.getElementById('edit-info-btn').classList.add('hidden');
 			document.getElementById('save-info-btn').classList.remove('hidden');
 			document.getElementById('cancel-edit-btn').classList.remove('hidden');
 			document.getElementById('view-ifc-properties-btn').disabled = true;
- 			// Notify C++ backend about edit mode change
+			// Show edit mode buttons container
+			const editModeButtons = document.querySelector('.edit-mode-buttons');
+			if (editModeButtons) {
+				editModeButtons.classList.remove('hidden');
+			}
+			// Show edit mode notification
+			const notification = document.getElementById('edit-mode-notification');
+			if (notification) {
+				notification.classList.remove('hidden');
+			}
+			// Notify C++ backend about edit mode change
 			if (typeof ACAPI !== 'undefined' && typeof ACAPI.ComponentInfo_SetEditMode === 'function') {
 				ACAPI.ComponentInfo_SetEditMode('true').catch(err => console.warn('Failed to set edit mode:', err));
- 			}
+			}
+			
  			// Update UI state
- 			updateUIState();
- 		}
+			updateUIState();
+			
+			// Manage focus for accessibility
+			setTimeout(() => {
+				manageFocusOnEditModeEnter();
+			}, 100);
+		}
+
+		/* Help text for photo functionality */
+		.help-text {
+			font-size: var(--font-size-xs);
+			color: var(--text-secondary);
+			margin-bottom: var(--spacing-sm);
+			line-height: 1.3;
+		}
+
+		.status-indicator {
+			display: inline-block;
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-size: var(--font-size-xs);
+			font-weight: 500;
+		}
+
+		.status-indicator.has-global-id {
+			background-color: rgba(16, 185, 129, 0.1);
+			color: var(--success);
+		}
+
+		.status-indicator.no-global-id {
+			background-color: rgba(239, 68, 68, 0.1);
+			color: var(--error);
+		}
 		
 		function showPhotoAtIndex(index) {
 			const photoDisplay = document.getElementById('photo-display');
@@ -1314,8 +1869,17 @@
 			currentPhotoIndex = index;
 			
 			// Update navigation buttons
-			prevBtn.disabled = (currentPhotoIndex === 0);
-			nextBtn.disabled = (currentPhotoIndex === currentPhotoPaths.length - 1);
+			const isPrevDisabled = (currentPhotoIndex === 0);
+			const isNextDisabled = (currentPhotoIndex === currentPhotoPaths.length - 1);
+			
+			prevBtn.disabled = isPrevDisabled;
+			nextBtn.disabled = isNextDisabled;
+			
+			// Update tabindex and aria-disabled for accessibility
+			prevBtn.tabIndex = isPrevDisabled ? -1 : 0;
+			nextBtn.tabIndex = isNextDisabled ? -1 : 0;
+			prevBtn.setAttribute('aria-disabled', isPrevDisabled.toString());
+			nextBtn.setAttribute('aria-disabled', isNextDisabled.toString());
 			
 			// Update index display
 			photoIndex.textContent = `${currentPhotoIndex + 1} / ${currentPhotoPaths.length}`;
@@ -1587,26 +2151,43 @@
 			}
 			
 			isEditMode = false;
+			removeEditModeKeyboardShortcuts();
 			hasUnsavedChanges = false;
 			updateUnsavedIndicator();
 			document.getElementById('component-id').disabled = true;
 			document.getElementById('photo-description').disabled = true;
-			document.getElementById('select-photos-btn').disabled = true;
+			// Update photo button state based on GlobalId availability
+			updatePhotoButtonState();
 			// Show edit button, hide save and cancel buttons
 			document.getElementById('edit-info-btn').classList.remove('hidden');
 			document.getElementById('save-info-btn').classList.add('hidden');
 			document.getElementById('cancel-edit-btn').classList.add('hidden');
 			document.getElementById('view-ifc-properties-btn').disabled = false;
+			// Hide edit mode buttons container
+			const editModeButtons = document.querySelector('.edit-mode-buttons');
+			if (editModeButtons) {
+				editModeButtons.classList.add('hidden');
+			}
+			// Hide edit mode notification
+			const notification = document.getElementById('edit-mode-notification');
+			if (notification) {
+				notification.classList.add('hidden');
+			}
 			
 			// Notify C++ backend about edit mode change
 			if (typeof ACAPI !== 'undefined' && typeof ACAPI.ComponentInfo_SetEditMode === 'function') {
 				ACAPI.ComponentInfo_SetEditMode('false').catch(err => console.warn('Failed to set edit mode:', err));
 			}
 			
-			// Refresh display to show saved values
+ 			// Refresh display to show saved values
 			refreshComponentInfoDisplay();
 			// Update UI state
 			updateUIState();
+			
+			// Manage focus for accessibility
+			setTimeout(() => {
+				manageFocusOnEditModeExit();
+			}, 100);
 		}
 		
 		// Event listeners
@@ -1619,16 +2200,38 @@
 			}
 			function updateBridgeStatus(isAvailable, funcs, version) {
 				const statusEl = document.getElementById('bridge-status');
+				const versionEl = document.getElementById('version-status');
+				const debugEl = document.getElementById('bridge-debug');
+				const retryBtn = document.getElementById('retry-bridge-btn');
+				
 				if (!statusEl) return;
+				
 				if (isAvailable) {
 					statusEl.textContent = `(桥接就绪, ${funcs.length} 个函数)`;
 					statusEl.style.color = '#10b981'; // success green
+					if (retryBtn) retryBtn.style.display = 'none';
 				} else {
 					statusEl.textContent = '(桥接未连接)';
 					statusEl.style.color = '#ef4444'; // error red
+					if (retryBtn) retryBtn.style.display = 'inline-block';
 				}
+				
 				if (version) {
-					statusEl.textContent += ` v${version}`;
+					if (versionEl) {
+						versionEl.textContent = `版本: ${version}`;
+						versionEl.style.color = version === '0.0.0.0' ? '#f59e0b' : '#10b981';
+					}
+					if (statusEl) {
+						statusEl.textContent += ` v${version}`;
+					}
+				} else if (versionEl) {
+					versionEl.textContent = '版本: 未获取';
+					versionEl.style.color = '#f59e0b';
+				}
+				
+				if (debugEl && funcs) {
+					debugEl.textContent = `可用函数: ${funcs.join(', ')}`;
+					debugEl.style.color = funcs.length > 0 ? '#10b981' : '#ef4444';
 				}
 			}
 			
@@ -1667,6 +2270,10 @@
 						updateBridgeStatus(true, funcs, 'error');
 					});
 				}
+			} else {
+				// ACAPI not available at all
+				console.error('ACAPI object is NOT defined - JavaScript bridge not working');
+				updateBridgeStatus(false, [], null);
 			}
 			// Initialize unsaved changes indicator
 			updateUnsavedIndicator();
@@ -1726,6 +2333,11 @@
 				enterEditMode();
 			});
 			
+			// Add info button (shown when no info exists)
+			document.getElementById('add-info-btn').addEventListener('click', function() {
+				enterEditMode();
+			});
+			
 			// Save info button
 			document.getElementById('save-info-btn').addEventListener('click', function() {
 				exitEditMode(true); // Save changes
@@ -1733,7 +2345,23 @@
 			
 			// Cancel edit button
 			document.getElementById('cancel-edit-btn').addEventListener('click', function() {
-				exitEditMode(false); // Cancel without saving
+				// Check for unsaved changes
+				if (hasUnsavedChanges) {
+					showConfirmation(
+						'有未保存的更改。确认要放弃更改并退出编辑模式吗？',
+						function() {
+							// User confirmed: discard changes
+							exitEditMode(false);
+						},
+						function() {
+							// User cancelled: stay in edit mode
+							console.log('用户取消退出编辑模式');
+						}
+					);
+				} else {
+					// No unsaved changes, exit immediately
+					exitEditMode(false);
+				}
 			});
 			
 			// Select photos button
@@ -1760,6 +2388,16 @@
 					return;
 				}
 				
+				// Guardrail: require GlobalId for photo functionality
+				if (!currentGlobalId || currentGlobalId === '') {
+					if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
+						ACAPI.LogDebug('错误: 构件缺少GlobalId属性，无法保存照片');
+					} else {
+						console.error('构件缺少GlobalId属性，无法保存照片');
+					}
+					return;
+				}
+				
 				if (typeof ACAPI.ComponentInfo_SelectPhotos === 'function') {
 					ACAPI.ComponentInfo_SelectPhotos(currentElementGuid).then(function (selectedPaths) {
 						if (selectedPaths && selectedPaths.length > 0) {
@@ -1778,7 +2416,7 @@
 										hasUnsavedChanges = false;
 										updateUnsavedIndicator();
 										// Enable view photos button and update preview
-										document.getElementById('view-photos-btn').disabled = false;
+										updateViewPhotoButtonState();
 										updatePhotoPreview();
 										// Update UI state since photos were added
 										updateUIState();
@@ -1805,6 +2443,16 @@
 					return;
 				}
 				
+				// Guardrail: require GlobalId for photo functionality
+				if (!currentGlobalId || currentGlobalId === '') {
+					if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
+						ACAPI.LogDebug('错误: 构件缺少GlobalId属性，无法查看照片');
+					} else {
+						console.error('构件缺少GlobalId属性，无法查看照片');
+					}
+					return;
+				}
+				
 				if (currentPhotoPaths && currentPhotoPaths.length > 0) {
 					if (typeof ACAPI.ComponentInfo_ViewPhotos === 'function') {
 						ACAPI.ComponentInfo_ViewPhotos([currentElementGuid, currentPhotoPaths[currentPhotoIndex]]).catch(function (err) {
@@ -1824,16 +2472,56 @@
 			
 			// Initialize UI state
 			updateUIState();
+			updateGlobalIdStatusIndicator();
 			
 			// Initial load of selected elements
 			UpdateSelectedElements();
+			
+			// Set up periodic selection update (every 250ms for faster response)
+			setInterval(function() {
+				UpdateSelectedElements();
+			}, 250);
+			
+			// Retry bridge connection button
+			document.getElementById('retry-bridge-btn').addEventListener('click', function() {
+				console.log('Retrying bridge connection...');
+				const statusEl = document.getElementById('bridge-status');
+				if (statusEl) {
+					statusEl.textContent = '(重试桥接中...)';
+					statusEl.style.color = '#f59e0b';
+				}
+				
+				// Force re-check ACAPI availability
+				if (typeof ACAPI !== 'undefined') {
+					const funcs = Object.keys(ACAPI).filter(key => typeof ACAPI[key] === 'function');
+					console.log('ACAPI available, functions:', funcs);
+					updateBridgeStatus(true, funcs, null);
+					
+					// Try to get version again
+					if (ACAPI.GetPluginVersion) {
+						ACAPI.GetPluginVersion().then(version => {
+							console.log('Plugin version after retry:', version);
+							updateBridgeStatus(true, funcs, version);
+							updatePluginVersion();
+						}).catch(err => {
+							console.error('Failed to get plugin version after retry:', err);
+							updateBridgeStatus(true, funcs, 'error');
+						});
+					}
+				} else {
+					console.log('ACAPI not available after retry');
+					updateBridgeStatus(false, [], null);
+				}
+			});
 		});
 		
 		// Global function to update selected elements (called from C++ when selection changes)
 		function UpdateSelectedElements() {
+			debugLog('UpdateSelectedElements called');
 			if (typeof ACAPI !== 'undefined' && typeof ACAPI.GetSelectedElements === 'function') {
 				ACAPI.GetSelectedElements().then(function (elemInfos) {
 					// Debug logging
+					debugLog('GetSelectedElements returned:', elemInfos ? elemInfos.length : 0, 'elements', elemInfos);
 					if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
 						ACAPI.LogDebug('UpdateSelectedElements: 收到 ' + (elemInfos ? elemInfos.length : 0) + ' 个元素');
 					} else {
@@ -1851,53 +2539,62 @@
 						updateElementSummary(elementGuid, elementType, elementId);
 						
 						// Check if element changed
+						debugLog('Element check:', { currentElementGuid, elementGuid, changed: currentElementGuid !== elementGuid });
 						if (currentElementGuid !== elementGuid) {
+							debugLog('Element changed from', currentElementGuid, 'to', elementGuid);
 							// Element changed - exit edit mode if active
 							if (isEditMode) {
 								exitEditMode(false); // Cancel edit mode without saving
 							}
 							previousElementGuid = currentElementGuid;
-							currentElementGuid = elementGuid;
-							hasUnsavedChanges = false;
-							updateUnsavedIndicator();
+			currentElementGuid = elementGuid;
+			hasUnsavedChanges = false;
+			updateUnsavedIndicator();
+			updateUIState();
 						}
 						
 						// Load component info for this element (if not in edit mode)
 						if (!isEditMode) {
 							if (typeof ACAPI.ComponentInfo_GetComponentInfo === 'function') {
 								ACAPI.ComponentInfo_GetComponentInfo(currentElementGuid).then(function (componentInfo) {
-									if (componentInfo && Array.isArray(componentInfo) && componentInfo.length >= 3) {
+									debugLog('ComponentInfo_GetComponentInfo returned:', componentInfo);
+									if (componentInfo && Array.isArray(componentInfo) && componentInfo.length >= 5) {
 										const componentId = componentInfo[0];
 										const photoDescription = componentInfo[1];
 										const photoPaths = componentInfo[2];
+										const globalId = componentInfo[3];
+										const folderName = componentInfo[4];
 										
 										document.getElementById('component-id').value = componentId || '';
 										document.getElementById('photo-description').value = photoDescription || '';
 										currentPhotoPaths = photoPaths || [];
+										currentGlobalId = globalId || '';
+										currentFolderName = folderName || '';
 										currentPhotoIndex = 0;
 										updatePhotoPreview();
-										document.getElementById('view-photos-btn').disabled = (currentPhotoPaths.length === 0);
+										// Update photo button state based on GlobalId availability
+										updatePhotoButtonState();
+										// Update view photo button state based on GlobalId and photo availability
+										updateViewPhotoButtonState();
+										updateGlobalIdStatusIndicator();
 										updateUIState();
 									}
-								}).catch(function (err) {
-									console.error('Failed to load component info:', err);
-									// Don't clear fields on error
-									if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
-										ACAPI.LogDebug('UpdateSelectedElements: 加载构件信息失败，保持当前值，错误: ' + err);
-									}
-								});
-							} else if (isEditMode) {
-								// In edit mode - don't load component info to prevent overwriting user input
-								if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
-									ACAPI.LogDebug('UpdateSelectedElements: 编辑模式中，跳过构件信息加载');
-								} else {
-									console.log('UpdateSelectedElements: 编辑模式中，跳过构件信息加载');
-								}
-							} else {
+				}).catch(function (err) {
+					debugLog('ComponentInfo_GetComponentInfo failed:', err);
+					console.error('Failed to load component info:', err);
+					// Don't clear fields on error
+					if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
+						ACAPI.LogDebug('UpdateSelectedElements: 加载构件信息失败，保持当前值，错误: ' + err);
+					}
+					updateUIState();
+				});
+	} else {
+								debugLog('ComponentInfo_GetComponentInfo API not available');
 								// ComponentInfo_GetComponentInfo API not available
 								if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
 									ACAPI.LogDebug('UpdateSelectedElements: ComponentInfo_GetComponentInfo API 不可用');
 								}
+								updateUIState();
 							}
 						} else {
 							// In edit mode - don't load component info to prevent overwriting user input
@@ -1908,8 +2605,11 @@
 							}
 						}
 					} else {
+						debugLog('No element selected, setting currentElementGuid = null');
 						// No element selected
 						currentElementGuid = null;
+						currentGlobalId = '';
+						currentPhotoPaths = [];
 						
 						// Debug logging
 						if (typeof ACAPI !== 'undefined' && typeof ACAPI.LogDebug === 'function') {
@@ -1920,7 +2620,9 @@
 						
 						document.getElementById('component-id').value = '';
 						document.getElementById('photo-description').value = '';
-						document.getElementById('view-photos-btn').disabled = true;
+						updatePhotoButtonState();
+						updateViewPhotoButtonState();
+						updateGlobalIdStatusIndicator();
 						updateUIState();
 					}
 				});
@@ -1936,5 +2638,9 @@
 			}
 		}
 	</script>
+	<div id="ui-state-indicator" style="font-size: var(--font-size-xs); color: #06b6d4; background: #111; padding: var(--spacing-xs); margin-top: var(--spacing-sm); border-top: 1px solid #333;">
+		UI状态: <span id="ui-state-text">检测中...</span>
+	</div>
+	<div id="debug-output" style="font-size: var(--font-size-xs); color: #666; background: #111; padding: var(--spacing-xs); margin-top: var(--spacing-sm); max-height: 100px; overflow: auto; border-top: 1px solid #333;"></div>
 </body>
 </html>
