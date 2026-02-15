@@ -25,8 +25,8 @@ namespace {
 	static const GS::UniString kHBIMIdName = "HBIM构件编号";
 	static const GS::UniString kHBIMDescName = "HBIM构件说明";
 	
-	// HBIM图片常量
-	static const GS::UniString kHBIMImageGroupName = "HBIM构件图片";
+	// HBIM图片常量 - 使用与HBIM属性相同的组，避免创建新组
+	static const GS::UniString kHBIMImageGroupName = "HBIM属性信息";  // 复用现有组
 	static const GS::UniString kHBIMImageLinksName = "HBIM图片链接";
 	
 	// Forward declaration
