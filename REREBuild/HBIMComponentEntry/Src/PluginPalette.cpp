@@ -465,20 +465,21 @@ namespace {
 		err = ACAPI_Property_CreatePropertyGroup(outGroup);
 		if (err != NoError) {
 			ACAPI_WriteReport("FindOrCreateHBIMImageGroup: CreatePropertyGroup 失败: %s (错误码: %d)", true, GS::UniString::Printf("Error %d", err).ToCStr().Get(), err);
-			
-			// 创建失败，可能是组已存在，重新查找
-			GS::Array<API_PropertyGroup> groups2;
-			GSErrCode err2 = ACAPI_Property_GetPropertyGroups(groups2);
-			if (err2 == NoError) {
-				for (UInt32 i = 0; i < groups2.GetSize(); ++i) {
-					if (groups2[i].name == kHBIMImageGroupName) {
-						outGroup = groups2[i];
-						ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 找到已存在的属性组", false);
-						return NoError;
-					}
+		}
+		
+		// 无论如何都重新查找，确保获取到正确的group guid
+		GS::Array<API_PropertyGroup> groups2;
+		GSErrCode err2 = ACAPI_Property_GetPropertyGroups(groups2);
+		if (err2 == NoError) {
+			for (UInt32 i = 0; i < groups2.GetSize(); ++i) {
+				if (groups2[i].name == kHBIMImageGroupName) {
+					outGroup = groups2[i];
+					ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 找到属性组 guid=%s", false, APIGuidToString(outGroup.guid).ToCStr().Get());
+					return NoError;
 				}
 			}
 		}
+		
 		return err;
 	}
 	
