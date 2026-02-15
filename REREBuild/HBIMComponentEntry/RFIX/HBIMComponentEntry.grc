@@ -24,7 +24,7 @@
 }
 
 /* --- HBIM构件信息录入 DG Palette：纯C++ DG控件面板 --- */
-'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  300  "HBIM构件信息录入" {
+'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  520  "HBIM构件信息录入" {
 /* [  1] */	CenterText		 20  20  360  25	LargePlain  vCenter  ""
 /* [  2] */	LeftText		 20  50  360   2	SmallPlain  vCenter  ""
 /* [  3] */	LeftText		 20  60   80  20	LargePlain  vCenter  "构件类型:"
@@ -38,8 +38,20 @@
 /* [ 11] */	TextEdit		110 162  270  22	LargePlain  255
 /* [ 12] */	LeftText		 20 192   80  20	LargePlain  vCenter  "HBIM构件说明:"
 /* [ 13] */	TextEdit		110 192  270  22	LargePlain  1024
-/* [ 14] */	Button			 80 232  100  24	LargePlain  "添加"
-/* [ 15] */	Button			200 232  100  24	LargePlain  "取消"
+ /* [ 14] */	Button			 80 232  100  24	LargePlain  "添加"
+ /* [ 15] */	Button			200 232  100  24	LargePlain  "取消"
+ /* [ 16] */	LeftText		 20 268  360   4	SmallPlain  vCenter  "────────────────────────────────"
+ /* [ 17] */	CenterText		 20 280  360  25	LargePlain  vCenter  "HBIM构件图片"
+ /* [ 18] */	LeftText		 20 305  360   4	SmallPlain  vCenter  "────────────────────────────────"
+ /* [ 19] */	LeftText		 20 312   80  20	LargePlain  vCenter  "图片数量:"
+ /* [ 20] */	LeftText		110 312   50  20	LargePlain  vCenter  "0"
+ /* [ 21] */	LeftText		180 312   80  20	LargePlain  vCenter  "当前图片:"
+ /* [ 22] */	LeftText		270 312   50  20	LargePlain  vCenter  "无"
+ /* [ 23] */	Button			 20 340  100  24	LargePlain  "选择图片"
+ /* [ 24] */	Button			130 340  100  24	LargePlain  "删除当前"
+ /* [ 25] */	Button			240 340   70  24	LargePlain  "上一张"
+ /* [ 26] */	Button			320 340   70  24	LargePlain  "下一张"
+ /* [ 27] */	LeftText		 20 380  360 120	LargePlain  vCenter  "图片预览区域 (DG::Picture待实现)"
 }
 
 'DLGH' 32520  DLGH_HBIMComponentEntryPalette {
@@ -58,4 +70,16 @@
 13	""	TextEdit_HBIMDescValue
 14	""	Button_HBIMAction
 15	""	Button_HBIMCancel
+16	""	LeftText_ImageSeparator
+17	""	CenterText_ImageTitle
+18	""	LeftText_ImageTitleUnderline
+19	""	LeftText_ImageCountLabel
+20	""	LeftText_ImageCountValue
+21	""	LeftText_ImageCurrentLabel
+22	""	LeftText_ImageCurrentValue
+23	""	Button_ImageSelect
+24	""	Button_ImageDelete
+25	""	Button_ImagePrev
+26	""	Button_ImageNext
+27	""	LeftText_ImagePreview
 }

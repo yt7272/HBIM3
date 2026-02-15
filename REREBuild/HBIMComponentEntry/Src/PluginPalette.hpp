@@ -38,7 +38,8 @@ public:
 		ImageSelectButtonId = 23,
 		ImageDeleteButtonId = 24,
 		ImagePrevButtonId = 25,
-		ImageNextButtonId = 26
+		ImageNextButtonId = 26,
+		ImagePreviewId = 27
 	};
 
 	static GSErrCode PaletteControlCallBack (Int32 paletteId, API_PaletteMessageID messageID, GS::IntPtr param);
@@ -90,6 +91,7 @@ private:
 	DG::Button imageDeleteButton;
 	DG::Button imagePrevButton;
 	DG::Button imageNextButton;
+	DG::LeftText imagePreview;
 	
 	// HBIM属性状态
 	bool hasHBIMProperties;

@@ -602,6 +602,7 @@ PluginPalette::PluginPalette ()
 	, imageDeleteButton (GetReference (), ImageDeleteButtonId)
 	, imagePrevButton (GetReference (), ImagePrevButtonId)
 	, imageNextButton (GetReference (), ImageNextButtonId)
+	, imagePreview (GetReference (), ImagePreviewId)
 	, hasHBIMProperties (false)
 	, isHBIMEditMode (false)
 	, hbimGroupGuid (APINULLGuid)
@@ -715,6 +716,10 @@ PluginPalette::PluginPalette ()
 	imageDeleteButton.Disable();
 	imagePrevButton.Disable();
 	imageNextButton.Disable();
+	
+	// 初始化图片预览控件（暂时使用LeftText代替DG::Picture）
+	imagePreview.Show();
+	imagePreview.Redraw();
 	
 	// 调试日志
 	ACAPI_WriteReport("HBIMComponentEntry: 插件面板已创建，按钮观察者已附加", false);
@@ -1188,6 +1193,12 @@ void PluginPalette::UpdateHBIMImageUI ()
 			GS::UniString currentText;
 			currentText.Printf("%d/%d", currentImageIndex + 1, imagePaths.GetSize());
 			imageCurrentValue.SetText(currentText);
+			
+			// 显示当前图片信息（暂时使用文本显示）
+			GS::UniString currentImagePath = imagePaths[currentImageIndex];
+			GS::UniString previewText;
+			previewText.Printf("图片: %s", currentImagePath.ToCStr().Get());
+			imagePreview.SetText(previewText);
 		}
 		
 		imageDeleteButton.Enable();
@@ -1206,6 +1217,9 @@ void PluginPalette::UpdateHBIMImageUI ()
 		imageDeleteButton.Disable();
 		imagePrevButton.Disable();
 		imageNextButton.Disable();
+		
+		// 没有图片时显示占位符文本
+		imagePreview.SetText("无图片预览");
 	}
 	
 	imageCountValue.Redraw();
@@ -1213,6 +1227,7 @@ void PluginPalette::UpdateHBIMImageUI ()
 	imageDeleteButton.Redraw();
 	imagePrevButton.Redraw();
 	imageNextButton.Redraw();
+	imagePreview.Redraw();
 }
 
 void PluginPalette::CheckHBIMImages ()
