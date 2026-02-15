@@ -5,6 +5,10 @@
 #include "FileSystem.hpp"
 #include <mutex>
 #include <stdio.h>
+#include <chrono>
+#include <filesystem>
+#include <sstream>
+#include <iomanip>
 
 // Property API头文件
 #include "APIdefs_Properties.h"
@@ -369,6 +373,191 @@ namespace {
 		bool hasId = (GetHBIMPropertyValue(elemGuid, idGuid, idVal) == NoError);
 		bool hasDesc = (GetHBIMPropertyValue(elemGuid, descGuid, descVal) == NoError);
 		return hasId || hasDesc; // 只要有一个属性有值就认为有HBIM属性
+	}
+	
+	// 获取当前时间戳字符串
+	static GS::UniString GetCurrentTimestamp()
+	{
+		auto now = std::chrono::system_clock::now();
+		auto now_time_t = std::chrono::system_clock::to_time_t(now);
+		auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+			now.time_since_epoch()) % 1000;
+		
+		std::tm tm_buf;
+		localtime_r(&now_time_t, &tm_buf);
+		
+		std::ostringstream oss;
+		oss << std::put_time(&tm_buf, "%Y%m%d_%H%M%S_")
+			<< std::setfill('0') << std::setw(3) << now_ms.count();
+		
+		return GS::UniString(oss.str().c_str());
+	}
+	
+	// 从文件路径中提取文件名
+	static GS::UniString GetFileNameFromPath(const GS::UniString& filePath)
+	{
+		IO::Location loc(filePath);
+		IO::Name fileName;
+		loc.GetLastLocalName(&fileName);
+		return GS::UniString(fileName);
+	}
+	
+
+	
+	// 复制文件到目标文件夹
+	static bool CopyFileToDestination(const GS::UniString& sourcePath, const GS::UniString& destFolder, 
+									  const GS::UniString& newFileName, GS::UniString& outDestPath)
+	{
+		try {
+			// 创建目标文件夹（如果不存在）
+			std::filesystem::path destFolderPath(destFolder.ToCStr().Get());
+			if (!std::filesystem::exists(destFolderPath)) {
+				std::filesystem::create_directories(destFolderPath);
+			}
+			
+			// 构建目标文件路径
+			std::filesystem::path destFilePath = destFolderPath / newFileName.ToCStr().Get();
+			
+			// 复制文件
+			std::filesystem::path sourceFilePath(sourcePath.ToCStr().Get());
+			if (!std::filesystem::exists(sourceFilePath)) {
+				ACAPI_WriteReport("CopyFileToDestination: 源文件不存在: %s", true, sourcePath.ToCStr().Get());
+				return false;
+			}
+			
+			std::filesystem::copy_file(sourceFilePath, destFilePath, 
+									   std::filesystem::copy_options::overwrite_existing);
+			
+			outDestPath = GS::UniString(destFilePath.string().c_str());
+			return true;
+		} catch (const std::filesystem::filesystem_error& e) {
+			ACAPI_WriteReport("CopyFileToDestination: 文件复制失败: %s", true, e.what());
+			return false;
+		} catch (...) {
+			ACAPI_WriteReport("CopyFileToDestination: 未知错误", true);
+			return false;
+		}
+	}
+	
+	// 创建或获取HBIM图片属性组
+	static GSErrCode FindOrCreateHBIMImageGroup(API_PropertyGroup& outGroup)
+	{
+		GS::Array<API_PropertyGroup> groups;
+		GSErrCode err = ACAPI_Property_GetPropertyGroups(groups);
+		if (err != NoError) {
+			ACAPI_WriteReport("FindOrCreateHBIMImageGroup: GetPropertyGroups 失败: %s", true, GS::UniString::Printf("Error %d", err).ToCStr().Get());
+			return err;
+		}
+		
+		for (UInt32 i = 0; i < groups.GetSize(); ++i) {
+			if (groups[i].name == kHBIMImageGroupName) {
+				outGroup = groups[i];
+				return NoError;
+			}
+		}
+		
+		// 创建新组
+		outGroup = {};
+		outGroup.guid = APINULLGuid;
+		outGroup.name = kHBIMImageGroupName;
+		outGroup.description = "HBIM构件图片链接";
+		err = ACAPI_Property_CreatePropertyGroup(outGroup);
+		if (err != NoError) {
+			ACAPI_WriteReport("FindOrCreateHBIMImageGroup: CreatePropertyGroup 失败: %s", true, GS::UniString::Printf("Error %d", err).ToCStr().Get());
+		}
+		return err;
+	}
+	
+	// 创建或获取HBIM图片链接属性定义
+	static GSErrCode FindOrCreateHBIMImageDefinition(const API_PropertyGroup& group, 
+													 API_PropertyDefinition& outDef, 
+													 GS::Array<API_Guid>& allClassificationItems)
+	{
+		GS::Array<API_PropertyDefinition> defs;
+		GSErrCode err = ACAPI_Property_GetPropertyDefinitions(group.guid, defs);
+		if (err != NoError) {
+			ACAPI_WriteReport("FindOrCreateHBIMImageDefinition: GetPropertyDefinitions 失败: %s", true, GS::UniString::Printf("Error %d", err).ToCStr().Get());
+			return err;
+		}
+		
+		for (UInt32 i = 0; i < defs.GetSize(); ++i) {
+			if (defs[i].name == kHBIMImageLinksName) {
+				outDef = defs[i];
+				return NoError;
+			}
+		}
+		
+		// 属性不存在，创建新的
+		outDef = {};
+		outDef.guid = APINULLGuid;
+		outDef.groupGuid = group.guid;
+		outDef.name = kHBIMImageLinksName;
+		outDef.collectionType = API_PropertySingleCollectionType;
+		outDef.valueType = API_PropertyStringValueType;
+		outDef.measureType = API_PropertyDefaultMeasureType;
+		outDef.canValueBeEditable = true;
+		outDef.definitionType = API_PropertyCustomDefinitionType;
+		outDef.defaultValue.basicValue.variantStatus = API_VariantStatusNormal;
+		outDef.defaultValue.basicValue.singleVariant.variant.type = API_PropertyStringValueType;
+		outDef.availability = allClassificationItems;
+		
+		err = ACAPI_Property_CreatePropertyDefinition(outDef);
+		if (err != NoError) {
+			ACAPI_WriteReport("FindOrCreateHBIMImageDefinition: CreatePropertyDefinition 失败: %s", true, GS::UniString::Printf("Error %d", err).ToCStr().Get());
+		}
+		return err;
+	}
+	
+	// 确保HBIM图片属性组和定义存在
+	static GSErrCode EnsureHBIMImagePropertyGroupAndDefinitions(API_Guid& outGroupGuid, API_Guid& outImageLinksGuid)
+	{
+		API_PropertyGroup group;
+		GSErrCode err = FindOrCreateHBIMImageGroup(group);
+		if (err != NoError) return err;
+		
+		// 收集所有分类项
+		GS::Array<API_Guid> allClassificationItems;
+		GetAllClassificationItems(allClassificationItems);
+		
+		API_PropertyDefinition defImageLinks;
+		err = FindOrCreateHBIMImageDefinition(group, defImageLinks, allClassificationItems);
+		if (err != NoError) return err;
+		
+		outGroupGuid = group.guid;
+		outImageLinksGuid = defImageLinks.guid;
+		return NoError;
+	}
+	
+	// 从元素读取HBIM图片链接属性值
+	static GSErrCode GetHBIMImageLinksPropertyValue(const API_Guid& elemGuid, const API_Guid& defGuid, GS::UniString& outVal)
+	{
+		API_Property p = {};
+		GSErrCode err = ACAPI_Element_GetPropertyValue(elemGuid, defGuid, p);
+		if (err != NoError || p.status != API_Property_HasValue || p.value.variantStatus != API_VariantStatusNormal) {
+			outVal = "[]"; // 返回空JSON数组
+			return err;
+		}
+		outVal = p.value.singleVariant.variant.uniStringValue;
+		return NoError;
+	}
+	
+	// 向元素写入HBIM图片链接属性值
+	static GSErrCode SetHBIMImageLinksPropertyValue(const API_Guid& elemGuid, const API_Guid& defGuid, const GS::UniString& value)
+	{
+		API_PropertyDefinition def = {};
+		def.guid = defGuid;
+		GSErrCode err = ACAPI_Property_GetPropertyDefinition(def);
+		if (err != NoError) return err;
+		
+		API_Property p = {};
+		p.definition = def;
+		p.status = API_Property_HasValue;
+		p.isDefault = false;
+		p.value.variantStatus = API_VariantStatusNormal;
+		p.value.singleVariant.variant.type = API_PropertyStringValueType;
+		p.value.singleVariant.variant.uniStringValue = value;
+		err = ACAPI_Element_SetProperty(elemGuid, p);
+		return err;
 	}
 }
 
@@ -1037,34 +1226,51 @@ void PluginPalette::CheckHBIMImages ()
 		return;
 	}
 	
-	// 获取构件GlobalId用于构建图片路径
-	GS::UniString globalId = GetGlobalIdForElement(currentElemGuid);
-	if (globalId == "未找到") {
-		UpdateHBIMImageUI();
-		return;
-	}
-	
-	// 检查项目是否已保存
-	if (!IsProjectSaved()) {
-		UpdateHBIMImageUI();
-		return;
-	}
-	
-	// 确保图片文件夹存在
-	GSErrCode err = EnsureHBIMImageFolder();
+	// 尝试查找现有的HBIM图片属性组和定义
+	API_Guid imageGroupGuid, imageLinksGuid;
+	GSErrCode err = EnsureHBIMImagePropertyGroupAndDefinitions(imageGroupGuid, imageLinksGuid);
 	if (err != NoError) {
+		// 属性定义不存在，没有图片
 		UpdateHBIMImageUI();
 		return;
 	}
 	
-	// 构建构件图片文件夹路径
-	GS::UniString elementImagePath = projectHash;
-	elementImagePath.Append("/");
-	elementImagePath.Append(globalId);
+	// 从属性读取图片链接
+	GS::UniString imageLinksJson;
+	err = GetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, imageLinksJson);
+	if (err != NoError || imageLinksJson == "[]" || imageLinksJson.GetLength() <= 2) {
+		// 没有图片链接或读取失败
+		UpdateHBIMImageUI();
+		return;
+	}
 	
-	// 检查文件夹是否存在
-	// 这里暂时简单实现，后续需要实际检查图片文件
+	// 解析JSON数组 - 简单手动解析
+	GS::UniString trimmed = imageLinksJson;
+	trimmed.DeleteFirst();
+	trimmed.DeleteLast();
 	
+	// 手动解析逗号分隔的带引号的字符串
+	UInt32 startPos = 0;
+	while (startPos < trimmed.GetLength()) {
+		// 查找引号开始位置
+		Int32 quoteStart = trimmed.FindFirst('"', startPos);
+		if (quoteStart == MaxUIndex) break;
+		
+		// 查找引号结束位置
+		Int32 quoteEnd = trimmed.FindFirst('"', quoteStart + 1);
+		if (quoteEnd == MaxUIndex) break;
+		
+		// 提取引号内的内容
+		GS::UniString path = trimmed.GetSubstring(quoteStart + 1, quoteEnd);
+		if (!path.IsEmpty()) {
+			imagePaths.Push(path);
+		}
+		
+		startPos = quoteEnd + 1;
+	}
+	
+	// 更新状态
+	hasHBIMImages = (imagePaths.GetSize() > 0);
 	UpdateHBIMImageUI();
 }
 
@@ -1087,25 +1293,132 @@ void PluginPalette::SelectHBIMImages ()
 	dlg.SetTitle("选择HBIM构件图片");
 	
 	if (dlg.Invoke()) {
-		// 清空现有图片路径
-		imagePaths.Clear();
+		// 确保图片文件夹存在
+		GSErrCode err = EnsureHBIMImageFolder();
+		if (err != NoError) {
+			DG::InformationAlert("错误", "无法创建图片文件夹，请确保项目已保存", "确定");
+			return;
+		}
 		
-		// 获取选中的文件
+		// 获取构件GlobalId
+		GS::UniString globalId = GetGlobalIdForElement(currentElemGuid);
+		if (globalId == "未找到") {
+			DG::InformationAlert("错误", "无法获取构件GlobalId", "确定");
+			return;
+		}
+		
+		// 确保HBIM图片属性组和定义存在
+		API_Guid imageGroupGuid, imageLinksGuid;
+		err = EnsureHBIMImagePropertyGroupAndDefinitions(imageGroupGuid, imageLinksGuid);
+		if (err != NoError) {
+			DG::InformationAlert("错误", "无法创建图片属性定义", "确定");
+			return;
+		}
+		
+		// 读取现有的图片链接
+		GS::UniString existingImageLinksJson;
+		GetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, existingImageLinksJson);
+		
+		// 解析现有的图片链接
+		GS::Array<GS::UniString> existingImagePaths;
+		if (existingImageLinksJson != "[]" && existingImageLinksJson.GetLength() > 2) {
+			// 简单解析JSON数组，格式：["path1", "path2", ...]
+			GS::UniString trimmed = existingImageLinksJson;
+			trimmed.DeleteFirst();
+			trimmed.DeleteLast();
+			
+			// 手动解析逗号分隔的带引号的字符串
+			UInt32 startPos = 0;
+			while (startPos < trimmed.GetLength()) {
+				// 查找引号开始位置
+				Int32 quoteStart = trimmed.FindFirst('"', startPos);
+				if (quoteStart == MaxUIndex) break;
+				
+				// 查找引号结束位置
+				Int32 quoteEnd = trimmed.FindFirst('"', quoteStart + 1);
+				if (quoteEnd == MaxUIndex) break;
+				
+				// 提取引号内的内容
+				GS::UniString path = trimmed.GetSubstring(quoteStart + 1, quoteEnd);
+				if (!path.IsEmpty()) {
+					existingImagePaths.Push(path);
+				}
+				
+				startPos = quoteEnd + 1;
+			}
+		}
+		
+		// 清空现有图片路径，使用从属性读取的路径
+		imagePaths = existingImagePaths;
+		
+		// 获取选中的文件并复制到项目文件夹
 		USize n = dlg.GetSelectionCount();
 		for (UIndex i = 0; i < n; ++i) {
 			IO::Location fileLocation = dlg.GetSelectedFile(i);
-			GS::UniString filePath;
-			fileLocation.ToPath(&filePath);
-			imagePaths.Push(filePath);
+			GS::UniString sourcePath;
+			fileLocation.ToPath(&sourcePath);
+			
+			// 生成新的文件名：timestamp_originalName.ext
+			GS::UniString timestamp = GetCurrentTimestamp();
+			GS::UniString originalFileName = GetFileNameFromPath(sourcePath);
+			GS::UniString newFileName;
+			newFileName.Printf("%s_%s", timestamp.ToCStr().Get(), originalFileName.ToCStr().Get());
+			
+			// 构建目标文件夹路径：HBIM_Images_{projectHash}/{elementGlobalId}/
+			GS::UniString destFolder;
+			destFolder.Printf("HBIM_Images_%s/%s", projectHash.ToCStr().Get(), globalId.ToCStr().Get());
+			
+			// 构建项目文件夹路径
+			API_ProjectInfo projectInfo;
+			if (ACAPI_ProjectOperation_Project(&projectInfo) != NoError || projectInfo.untitled) {
+				DG::InformationAlert("错误", "项目未保存，无法复制图片", "确定");
+				return;
+			}
+			
+			IO::Location projectLocation = *projectInfo.location;
+			GS::UniString projectPath;
+			projectLocation.ToPath(&projectPath);
+			
+			GS::UniString fullDestFolder;
+			fullDestFolder.Printf("%s/%s", projectPath.ToCStr().Get(), destFolder.ToCStr().Get());
+			
+			// 复制文件到目标文件夹
+			GS::UniString destPath;
+			if (CopyFileToDestination(sourcePath, fullDestFolder, newFileName, destPath)) {
+				// 添加相对路径到图片路径列表
+				GS::UniString relativePath;
+				relativePath.Printf("%s/%s", destFolder.ToCStr().Get(), newFileName.ToCStr().Get());
+				imagePaths.Push(relativePath);
+			} else {
+				DG::InformationAlert("警告", GS::UniString::Printf("无法复制文件: %s", originalFileName.ToCStr().Get()).ToCStr().Get(), "确定");
+			}
+		}
+		
+		// 构建JSON数组保存到属性
+		if (imagePaths.GetSize() > 0) {
+			GS::UniString jsonArray = "[";
+			for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
+				if (i > 0) jsonArray.Append(",");
+				jsonArray.Append("\"");
+				jsonArray.Append(imagePaths[i]);
+				jsonArray.Append("\"");
+			}
+			jsonArray.Append("]");
+			
+			// 保存到属性
+			err = SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
+			if (err != NoError) {
+				DG::InformationAlert("警告", "无法保存图片链接到属性", "确定");
+			}
+		} else {
+			// 如果没有图片，保存空数组
+			SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, "[]");
 		}
 		
 		// 更新状态
 		hasHBIMImages = (imagePaths.GetSize() > 0);
 		currentImageIndex = 0;
 		UpdateHBIMImageUI();
-		
-		// 确保图片文件夹存在
-		EnsureHBIMImageFolder();
 	}
 }
 
@@ -1117,6 +1430,24 @@ void PluginPalette::DeleteCurrentHBIMImage ()
 	
 	// 删除当前图片
 	imagePaths.Delete(currentImageIndex);
+	
+	// 更新属性中的图片链接
+	API_Guid imageGroupGuid, imageLinksGuid;
+	GSErrCode err = EnsureHBIMImagePropertyGroupAndDefinitions(imageGroupGuid, imageLinksGuid);
+	if (err == NoError) {
+		// 构建更新后的JSON数组
+		GS::UniString jsonArray = "[";
+		for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
+			if (i > 0) jsonArray.Append(",");
+			jsonArray.Append("\"");
+			jsonArray.Append(imagePaths[i]);
+			jsonArray.Append("\"");
+		}
+		jsonArray.Append("]");
+		
+		// 保存到属性
+		SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
+	}
 	
 	// 更新状态
 	if (imagePaths.GetSize() == 0) {
