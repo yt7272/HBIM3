@@ -470,16 +470,23 @@ namespace {
 		// 无论如何都重新查找，确保获取到正确的group guid
 		GS::Array<API_PropertyGroup> groups2;
 		GSErrCode err2 = ACAPI_Property_GetPropertyGroups(groups2);
+		ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 开始查找，共 %d 个属性组", false, (int)groups2.GetSize());
 		if (err2 == NoError) {
 			for (UInt32 i = 0; i < groups2.GetSize(); ++i) {
-				if (groups2[i].name == kHBIMImageGroupName) {
+				ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 检查属性组[%d]: '%s'", false, (int)i, groups2[i].name.ToCStr().Get());
+				GS::UniString existingName = groups2[i].name;
+				GS::UniString targetName = kHBIMImageGroupName;
+				if (existingName == targetName || 
+					existingName.Contains(targetName) || 
+					targetName.Contains(existingName)) {
 					outGroup = groups2[i];
-					ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 找到属性组 guid=%s", false, APIGuidToString(outGroup.guid).ToCStr().Get());
+					ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 通过宽松比较找到匹配！guid=%s", false, APIGuidToString(outGroup.guid).ToCStr().Get());
 					return NoError;
 				}
 			}
 		}
 		
+		ACAPI_WriteReport("FindOrCreateHBIMImageGroup: 未找到属性组 '%s'", true, kHBIMImageGroupName.ToCStr().Get());
 		return err;
 	}
 	
