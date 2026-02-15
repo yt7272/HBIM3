@@ -517,7 +517,20 @@ namespace {
 		
 		err = ACAPI_Property_CreatePropertyDefinition(outDef);
 		if (err != NoError) {
-			ACAPI_WriteReport("FindOrCreateHBIMImageDefinition: CreatePropertyDefinition 失败: %s", true, GS::UniString::Printf("Error %d", err).ToCStr().Get());
+			ACAPI_WriteReport("FindOrCreateHBIMImageDefinition: CreatePropertyDefinition 失败: %s (错误码: %d)", true, GS::UniString::Printf("Error %d", err).ToCStr().Get(), err);
+			
+			// 创建失败，可能是属性已存在，重新查找
+			GS::Array<API_PropertyDefinition> defs2;
+			GSErrCode err2 = ACAPI_Property_GetPropertyDefinitions(group.guid, defs2);
+			if (err2 == NoError) {
+				for (UInt32 i = 0; i < defs2.GetSize(); ++i) {
+					if (defs2[i].name == kHBIMImageLinksName) {
+						outDef = defs2[i];
+						ACAPI_WriteReport("FindOrCreateHBIMImageDefinition: 找到已存在的属性定义", false);
+						return NoError;
+					}
+				}
+			}
 		}
 		return err;
 	}
