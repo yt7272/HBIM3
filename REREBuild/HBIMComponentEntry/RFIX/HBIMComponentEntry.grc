@@ -1,0 +1,33 @@
+/* HBIM构件信息录入插件 - 构件属性管理 */
+'MDID' 32500 "Add-On Identifier" {
+	625438022
+	170868903
+}
+
+'STR#' 32000 "Add-on Name and Description" {
+/* [  1] */		"HBIM构件信息录入"
+/* [  2] */		"构件属性信息录入与管理插件"
+}
+
+
+
+'STR#' 32500 "Menu" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"HBIM构件信息录入"
+/* [  1] */			"显示/隐藏构件信息面板^EP"
+}
+
+'STR#' 32600 "Menu Prompt" {
+/* [   ] */		"Add-Ons"
+/* [   ] */		"HBIM构件信息录入"
+/* [  1] */			"显示或隐藏构件信息录入面板"
+}
+
+/* --- HBIM构件信息录入 DG Palette：纯C++ DG控件面板 --- */
+'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  200  "HBIM构件信息录入" {
+/* [  1] */	LeftText		 20  20  360  40	LargePlain  vCenter  ""
+}
+
+'DLGH' 32520  DLGH_HBIMComponentEntryPalette {
+ 1	""	LeftText_Title
+}
