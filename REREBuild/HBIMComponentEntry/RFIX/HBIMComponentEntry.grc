@@ -24,10 +24,38 @@
 }
 
 /* --- HBIM构件信息录入 DG Palette：纯C++ DG控件面板 --- */
-'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  200  "HBIM构件信息录入" {
-/* [  1] */	LeftText		 20  20  360  40	LargePlain  vCenter  ""
+'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  300  "HBIM构件信息录入" {
+/* [  1] */	CenterText		 20  20  360  25	LargePlain  vCenter  ""
+/* [  2] */	LeftText		 20  50  360   2	SmallPlain  vCenter  ""
+/* [  3] */	LeftText		 20  60   80  20	LargePlain  vCenter  "构件类型:"
+/* [  4] */	LeftText		110  60  270  20	LargePlain  vCenter  ""
+/* [  5] */	LeftText		 20  90   80  20	LargePlain  vCenter  "构件编号:"
+/* [  6] */	LeftText		110  90  270  20	LargePlain  vCenter  ""
+/* [  7] */	LeftText		 20 118  360   4	SmallPlain  vCenter  "────────────────────────────────"
+/* [  8] */	CenterText		 20 130  360  25	LargePlain  vCenter  "HBIM属性信息"
+/* [  9] */	LeftText		 20 155  360   4	SmallPlain  vCenter  "────────────────────────────────"
+/* [ 10] */	LeftText		 20 162   80  20	LargePlain  vCenter  "HBIM构件编号:"
+/* [ 11] */	TextEdit		110 162  270  22	LargePlain  255
+/* [ 12] */	LeftText		 20 192   80  20	LargePlain  vCenter  "HBIM构件说明:"
+/* [ 13] */	TextEdit		110 192  270  22	LargePlain  1024
+/* [ 14] */	Button			 80 232  100  24	LargePlain  "添加"
+/* [ 15] */	Button			200 232  100  24	LargePlain  "取消"
 }
 
 'DLGH' 32520  DLGH_HBIMComponentEntryPalette {
- 1	""	LeftText_Title
+ 1	""	CenterText_Title
+ 2	""	LeftText_Underline
+ 3	""	LeftText_TypeLabel
+ 4	""	LeftText_TypeValue
+ 5	""	LeftText_IdLabel
+ 6	""	LeftText_IdValue
+ 7	""	LeftText_HBIMSeparator
+ 8	""	CenterText_HBIMTitle
+ 9	""	LeftText_HBIMTitleUnderline
+10	""	LeftText_HBIMIdLabel
+11	""	TextEdit_HBIMIdValue
+12	""	LeftText_HBIMDescLabel
+13	""	TextEdit_HBIMDescValue
+14	""	Button_HBIMAction
+15	""	Button_HBIMCancel
 }
