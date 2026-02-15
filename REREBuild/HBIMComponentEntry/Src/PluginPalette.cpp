@@ -637,6 +637,8 @@ PluginPalette::PluginPalette ()
 	, imageDeleteButton (GetReference (), ImageDeleteButtonId)
 	, imagePrevButton (GetReference (), ImagePrevButtonId)
 	, imageNextButton (GetReference (), ImageNextButtonId)
+	, imageOKButton (GetReference (), ImageOKButtonId)
+	, imageCancelButton (GetReference (), ImageCancelButtonId)
 	, imagePreview (GetReference (), ImagePreviewId)
 	, hasHBIMProperties (false)
 	, isHBIMEditMode (false)
@@ -646,6 +648,7 @@ PluginPalette::PluginPalette ()
 	, currentElemGuid (APINULLGuid)
 	, isReSelectingElement (false)
 	, hasHBIMImages (false)
+	, isImageEditMode (false)
 	, currentImageIndex (0)
 {
 
@@ -732,7 +735,7 @@ PluginPalette::PluginPalette ()
 	imageCurrentValue.SetText("无");
 	imageCurrentValue.Show();
 	
-	imageSelectButton.SetText("选择图片");
+	imageSelectButton.SetText("附着图片");
 	imageSelectButton.Show();
 	imageDeleteButton.SetText("删除当前");
 	imageDeleteButton.Show();
@@ -740,17 +743,25 @@ PluginPalette::PluginPalette ()
 	imagePrevButton.Show();
 	imageNextButton.SetText("下一张");
 	imageNextButton.Show();
+	imageOKButton.SetText("确定");
+	imageOKButton.Show();
+	imageCancelButton.SetText("取消");
+	imageCancelButton.Show();
 	
 	// 附加图片按钮观察者
 	imageSelectButton.Attach(*this);
 	imageDeleteButton.Attach(*this);
 	imagePrevButton.Attach(*this);
 	imageNextButton.Attach(*this);
+	imageOKButton.Attach(*this);
+	imageCancelButton.Attach(*this);
 	
 	imageSelectButton.Enable();
 	imageDeleteButton.Disable();
 	imagePrevButton.Disable();
 	imageNextButton.Disable();
+	imageOKButton.Hide();
+	imageCancelButton.Hide();
 	
 	// 初始化图片预览控件（暂时使用LeftText代替DG::Picture）
 	imagePreview.Show();
@@ -824,11 +835,31 @@ void PluginPalette::UpdateFromSelection ()
 		hasHBIMProperties = false;
 		isHBIMEditMode = false;
 		UpdateHBIMUI();
+		
+		// 重置HBIM图片显示
+		hasHBIMImages = false;
+		isImageEditMode = false;
+		imagePaths.Clear();
+		originalImagePaths.Clear();
+		currentImageIndex = 0;
+		UpdateHBIMImageUI();
 		return;
 	}
 	
 	// 使用第一个选中的元素
 	API_Guid elemGuid = selNeigs[0].guid;
+	
+	// 如果切换了元素，取消任何编辑模式
+	if (elemGuid != currentElemGuid) {
+		if (isHBIMEditMode) {
+			ExitHBIMEditMode(false);
+		}
+		if (isImageEditMode) {
+			ExitImageEditMode(false);
+		}
+	}
+	
+	currentElemGuid = elemGuid;
 	
 	// 更新IFC属性显示
 	GS::UniString ifcType = GetIFCTypeForElement(elemGuid);
@@ -840,6 +871,9 @@ void PluginPalette::UpdateFromSelection ()
 	
 	// 检查并更新HBIM属性
 	CheckHBIMProperties(elemGuid);
+	
+	// 检查并更新HBIM图片
+	CheckHBIMImages();
 }
 
 void PluginPalette::UpdateHBIMUI ()
@@ -1212,13 +1246,17 @@ Int32 PluginPalette::GetPaletteReferenceId ()
 void PluginPalette::PanelCloseRequested (const DG::PanelCloseRequestEvent& ev, bool* accepted)
 {
 	if (isHBIMEditMode) {
-		ExitHBIMEditMode(false); // 取消编辑
+		ExitHBIMEditMode(false); // 取消HBIM属性编辑
+	}
+	if (isImageEditMode) {
+		ExitImageEditMode(false); // 取消图片编辑
 	}
 	*accepted = true;
 }
 
 void PluginPalette::UpdateHBIMImageUI ()
 {
+	// 更新图片计数和当前图片显示
 	if (hasHBIMImages && imagePaths.GetSize() > 0) {
 		GS::UniString countText;
 		countText.Printf("%d", imagePaths.GetSize());
@@ -1235,34 +1273,158 @@ void PluginPalette::UpdateHBIMImageUI ()
 			previewText.Printf("图片: %s", currentImagePath.ToCStr().Get());
 			imagePreview.SetText(previewText);
 		}
-		
-		imageDeleteButton.Enable();
-		imagePrevButton.Enable();
-		imageNextButton.Enable();
-		
-		if (currentImageIndex == 0) {
-			imagePrevButton.Disable();
-		}
-		if (currentImageIndex >= imagePaths.GetSize() - 1) {
-			imageNextButton.Disable();
-		}
 	} else {
 		imageCountValue.SetText("0");
 		imageCurrentValue.SetText("无");
-		imageDeleteButton.Disable();
-		imagePrevButton.Disable();
-		imageNextButton.Disable();
 		
 		// 没有图片时显示占位符文本
 		imagePreview.SetText("无图片预览");
 	}
 	
+	// 根据编辑模式更新按钮状态
+	if (isImageEditMode) {
+		// 编辑模式：显示确定和取消按钮，隐藏选择/编辑按钮
+		imageSelectButton.Hide();
+		imageOKButton.Show();
+		imageCancelButton.Show();
+		
+		// 在编辑模式下启用删除和导航按钮
+		if (hasHBIMImages && imagePaths.GetSize() > 0) {
+			imageDeleteButton.Enable();
+			imagePrevButton.Enable();
+			imageNextButton.Enable();
+			
+			if (currentImageIndex == 0) {
+				imagePrevButton.Disable();
+			}
+			if (currentImageIndex >= imagePaths.GetSize() - 1) {
+				imageNextButton.Disable();
+			}
+		} else {
+			imageDeleteButton.Disable();
+			imagePrevButton.Disable();
+			imageNextButton.Disable();
+		}
+	} else {
+		// 非编辑模式：显示选择/编辑按钮，隐藏确定和取消按钮
+		imageSelectButton.Show();
+		imageOKButton.Hide();
+		imageCancelButton.Hide();
+		
+		// 根据是否有图片更新选择按钮文本
+		if (hasHBIMImages && imagePaths.GetSize() > 0) {
+			imageSelectButton.SetText("编辑");
+			
+			// 非编辑模式下启用删除和导航按钮
+			imageDeleteButton.Enable();
+			imagePrevButton.Enable();
+			imageNextButton.Enable();
+			
+			if (currentImageIndex == 0) {
+				imagePrevButton.Disable();
+			}
+			if (currentImageIndex >= imagePaths.GetSize() - 1) {
+				imageNextButton.Disable();
+			}
+		} else {
+			imageSelectButton.SetText("附着图片");
+			
+			// 没有图片时禁用删除和导航按钮
+			imageDeleteButton.Disable();
+			imagePrevButton.Disable();
+			imageNextButton.Disable();
+		}
+	}
+	
+	// 重绘所有控件
 	imageCountValue.Redraw();
 	imageCurrentValue.Redraw();
+	imageSelectButton.Redraw();
 	imageDeleteButton.Redraw();
 	imagePrevButton.Redraw();
 	imageNextButton.Redraw();
+	imageOKButton.Redraw();
+	imageCancelButton.Redraw();
 	imagePreview.Redraw();
+}
+
+void PluginPalette::EnterImageEditMode ()
+{
+	if (currentElemGuid == APINULLGuid) {
+		DG::InformationAlert("提示", "请先选择一个构件", "确定");
+		return;
+	}
+	
+	// 保存原始图片路径用于取消编辑时恢复
+	originalImagePaths = imagePaths;
+	
+	// 进入编辑模式
+	isImageEditMode = true;
+	
+	// 更新UI
+	UpdateHBIMImageUI();
+	
+	ACAPI_WriteReport("EnterImageEditMode: 进入图片编辑模式", false);
+}
+
+void PluginPalette::ExitImageEditMode (bool save)
+{
+	if (!isImageEditMode) {
+		return;
+	}
+	
+	if (save) {
+		// 保存更改：将当前图片路径保存到属性
+		if (currentElemGuid != APINULLGuid) {
+			// 确保HBIM图片属性组和定义存在
+			API_Guid imageGroupGuid, imageLinksGuid;
+			GSErrCode err = EnsureHBIMImagePropertyGroupAndDefinitions(imageGroupGuid, imageLinksGuid);
+			if (err == NoError) {
+				// 构建JSON数组保存到属性
+				if (imagePaths.GetSize() > 0) {
+					GS::UniString jsonArray = "[";
+					for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
+						if (i > 0) jsonArray.Append(",");
+						jsonArray.Append("\"");
+						jsonArray.Append(imagePaths[i]);
+						jsonArray.Append("\"");
+					}
+					jsonArray.Append("]");
+					
+					// 保存到属性
+					err = SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
+					if (err != NoError) {
+						DG::InformationAlert("警告", "无法保存图片链接到属性", "确定");
+					}
+				} else {
+					// 如果没有图片，保存空数组
+					SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, "[]");
+				}
+				
+				// 更新状态
+				hasHBIMImages = (imagePaths.GetSize() > 0);
+				currentImageIndex = 0;
+			}
+		}
+	} else {
+		// 取消编辑：恢复原始图片路径
+		imagePaths = originalImagePaths;
+		hasHBIMImages = (imagePaths.GetSize() > 0);
+		currentImageIndex = 0;
+		
+		ACAPI_WriteReport("ExitImageEditMode: 取消编辑，恢复原始图片", false);
+	}
+	
+	// 退出编辑模式
+	isImageEditMode = false;
+	
+	// 清空原始路径
+	originalImagePaths.Clear();
+	
+	// 更新UI
+	UpdateHBIMImageUI();
+	
+	ACAPI_WriteReport("ExitImageEditMode: 退出图片编辑模式", false);
 }
 
 void PluginPalette::CheckHBIMImages ()
@@ -1444,26 +1606,30 @@ void PluginPalette::SelectHBIMImages ()
 			}
 		}
 		
-		// 构建JSON数组保存到属性
-		if (imagePaths.GetSize() > 0) {
-			GS::UniString jsonArray = "[";
-			for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
-				if (i > 0) jsonArray.Append(",");
-				jsonArray.Append("\"");
-				jsonArray.Append(imagePaths[i]);
-				jsonArray.Append("\"");
+		// 根据是否在编辑模式决定是否保存到属性
+		if (!isImageEditMode) {
+			// 不在编辑模式：直接保存到属性
+			if (imagePaths.GetSize() > 0) {
+				GS::UniString jsonArray = "[";
+				for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
+					if (i > 0) jsonArray.Append(",");
+					jsonArray.Append("\"");
+					jsonArray.Append(imagePaths[i]);
+					jsonArray.Append("\"");
+				}
+				jsonArray.Append("]");
+				
+				// 保存到属性
+				err = SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
+				if (err != NoError) {
+					DG::InformationAlert("警告", "无法保存图片链接到属性", "确定");
+				}
+			} else {
+				// 如果没有图片，保存空数组
+				SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, "[]");
 			}
-			jsonArray.Append("]");
-			
-			// 保存到属性
-			err = SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
-			if (err != NoError) {
-				DG::InformationAlert("警告", "无法保存图片链接到属性", "确定");
-			}
-		} else {
-			// 如果没有图片，保存空数组
-			SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, "[]");
 		}
+		// 在编辑模式下，不保存到属性，等待用户点击确定
 		
 		// 更新状态
 		hasHBIMImages = (imagePaths.GetSize() > 0);
@@ -1481,23 +1647,27 @@ void PluginPalette::DeleteCurrentHBIMImage ()
 	// 删除当前图片
 	imagePaths.Delete(currentImageIndex);
 	
-	// 更新属性中的图片链接
-	API_Guid imageGroupGuid, imageLinksGuid;
-	GSErrCode err = EnsureHBIMImagePropertyGroupAndDefinitions(imageGroupGuid, imageLinksGuid);
-	if (err == NoError) {
-		// 构建更新后的JSON数组
-		GS::UniString jsonArray = "[";
-		for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
-			if (i > 0) jsonArray.Append(",");
-			jsonArray.Append("\"");
-			jsonArray.Append(imagePaths[i]);
-			jsonArray.Append("\"");
+	// 根据是否在编辑模式决定是否保存到属性
+	if (!isImageEditMode) {
+		// 不在编辑模式：直接保存到属性
+		API_Guid imageGroupGuid, imageLinksGuid;
+		GSErrCode err = EnsureHBIMImagePropertyGroupAndDefinitions(imageGroupGuid, imageLinksGuid);
+		if (err == NoError) {
+			// 构建更新后的JSON数组
+			GS::UniString jsonArray = "[";
+			for (UInt32 i = 0; i < imagePaths.GetSize(); i++) {
+				if (i > 0) jsonArray.Append(",");
+				jsonArray.Append("\"");
+				jsonArray.Append(imagePaths[i]);
+				jsonArray.Append("\"");
+			}
+			jsonArray.Append("]");
+			
+			// 保存到属性
+			SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
 		}
-		jsonArray.Append("]");
-		
-		// 保存到属性
-		SetHBIMImageLinksPropertyValue(currentElemGuid, imageLinksGuid, jsonArray);
 	}
+	// 在编辑模式下，不保存到属性，等待用户点击确定
 	
 	// 更新状态
 	if (imagePaths.GetSize() == 0) {
@@ -1614,12 +1784,23 @@ void PluginPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
 	} else if (ev.GetSource() == &hbimCancelButton) {
 		ExitHBIMEditMode(false);
 	} else if (ev.GetSource() == &imageSelectButton) {
-		SelectHBIMImages();
+		// 根据当前状态决定行为
+		if (hasHBIMImages && imagePaths.GetSize() > 0) {
+			// 有图片：进入编辑模式
+			EnterImageEditMode();
+		} else {
+			// 无图片：直接选择图片
+			SelectHBIMImages();
+		}
 	} else if (ev.GetSource() == &imageDeleteButton) {
 		DeleteCurrentHBIMImage();
 	} else if (ev.GetSource() == &imagePrevButton) {
 		NavigateHBIMImage(false);
 	} else if (ev.GetSource() == &imageNextButton) {
 		NavigateHBIMImage(true);
+	} else if (ev.GetSource() == &imageOKButton) {
+		ExitImageEditMode(true);
+	} else if (ev.GetSource() == &imageCancelButton) {
+		ExitImageEditMode(false);
 	}
 }

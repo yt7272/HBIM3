@@ -24,7 +24,7 @@
 }
 
 /* --- HBIM构件信息录入 DG Palette：纯C++ DG控件面板 --- */
-'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  520  "HBIM构件信息录入" {
+'GDLG' 32520  Palette | topCaption | close | grow  0  0  400  550  "HBIM构件信息录入" {
 /* [  1] */	CenterText		 20  20  360  25	LargePlain  vCenter  ""
 /* [  2] */	LeftText		 20  50  360   2	SmallPlain  vCenter  ""
 /* [  3] */	LeftText		 20  60   80  20	LargePlain  vCenter  "构件类型:"
@@ -47,11 +47,13 @@
  /* [ 20] */	LeftText		110 312   50  20	LargePlain  vCenter  "0"
  /* [ 21] */	LeftText		180 312   80  20	LargePlain  vCenter  "当前图片:"
  /* [ 22] */	LeftText		270 312   50  20	LargePlain  vCenter  "无"
- /* [ 23] */	Button			 20 340  100  24	LargePlain  "选择图片"
- /* [ 24] */	Button			130 340  100  24	LargePlain  "删除当前"
- /* [ 25] */	Button			240 340   70  24	LargePlain  "上一张"
- /* [ 26] */	Button			320 340   70  24	LargePlain  "下一张"
- /* [ 27] */	LeftText		 20 380  360 120	LargePlain  vCenter  "图片预览区域 (DG::Picture待实现)"
+  /* [ 23] */	Button			 20 340  100  24	LargePlain  "附着图片"
+  /* [ 24] */	Button			130 340  100  24	LargePlain  "删除当前"
+  /* [ 25] */	Button			240 340   70  24	LargePlain  "上一张"
+  /* [ 26] */	Button			320 340   70  24	LargePlain  "下一张"
+  /* [ 27] */	LeftText		 20 380  360 120	LargePlain  vCenter  "图片预览区域 (DG::Picture待实现)"
+  /* [ 28] */	Button			 20 510  100  24	LargePlain  "确定"
+  /* [ 29] */	Button			130 510  100  24	LargePlain  "取消"
 }
 
 'DLGH' 32520  DLGH_HBIMComponentEntryPalette {
@@ -77,9 +79,11 @@
 20	""	LeftText_ImageCountValue
 21	""	LeftText_ImageCurrentLabel
 22	""	LeftText_ImageCurrentValue
-23	""	Button_ImageSelect
-24	""	Button_ImageDelete
-25	""	Button_ImagePrev
-26	""	Button_ImageNext
-27	""	LeftText_ImagePreview
+ 23	""	Button_ImageSelect
+ 24	""	Button_ImageDelete
+ 25	""	Button_ImagePrev
+ 26	""	Button_ImageNext
+ 27	""	LeftText_ImagePreview
+ 28	""	Button_ImageOK
+ 29	""	Button_ImageCancel
 }
