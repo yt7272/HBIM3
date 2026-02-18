@@ -1,17 +1,8 @@
 # HBIM3
 
-ArchiCAD 29 插件项目：为构件添加照片与 HBIM 属性信息的系列插件。
+ArchiCAD 29 插件：为构件添加 HBIM 属性与照片信息。
 
-## 子项目
-
-| 插件 | 路径 | 功能 |
-|------|------|------|
-| **ComponentInfo** | `ComponentInfo/` | 构件编号、照片说明、照片路径等扩展属性 |
-| **IFCPropertyReader** | `IFCPropertyReader/` | IFC 属性读取与 HTML 面板，LRU 缓存 |
-| **MergedPlugin** | `ReBuild/NewPlugin/` | ComponentInfo + IFCPropertyReader 统一 HTML 面板 |
-| **HBIMComponentEntry** | `REREBuild/HBIMComponentEntry/` | HBIM 构件编号/说明、HBIM 构件图片（添加/编辑/删除、系统预览） |
-
-## HBIMComponentEntry 主要功能
+## HBIMComponentEntry 功能
 
 - **HBIM 属性**：构件编号、构件说明的自定义属性及添加/编辑流程
 - **HBIM 构件图片**：多图选择、预览、上一张/下一张、删除
@@ -20,20 +11,20 @@ ArchiCAD 29 插件项目：为构件添加照片与 HBIM 属性信息的系列�
 
 ## 构建
 
-详见 [AGENTS.md](AGENTS.md)。
-
 ```bash
-# HBIMComponentEntry（推荐，功能最全）
-cd REREBuild/HBIMComponentEntry && ./build.sh
+cd REREBuild && ./build.sh
+```
 
-# MergedPlugin（ComponentInfo + IFC）
-cd ReBuild/NewPlugin && ./build.sh
+清理构建：`./build.sh clean`
 
-# ComponentInfo
-cd ComponentInfo && ./build.sh
+## 项目结构
 
-# IFCPropertyReader
-cd IFCPropertyReader && ./build.sh
+```
+HBIM3/
+├── API.Development.Kit.MAC.29.3100/   # ArchiCAD API 开发包
+├── REREBuild/                        # 主插件源码（HBIMComponentEntry）
+├── AGENTS.md                         # AI 开发指南
+└── README.md
 ```
 
 ## 环境

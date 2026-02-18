@@ -35,9 +35,9 @@ cd ReBuild/NewPlugin
 ./build.sh                  # Build merged plugin
 ```
 
-**HBIMComponentEntry (in REREBuild/HBIMComponentEntry):**
+**HBIMComponentEntry (in REREBuild/):**
 ```bash
-cd REREBuild/HBIMComponentEntry
+cd REREBuild
 ./build.sh                  # Normal build with auto versioning (0.month.day.build)
 ./build.sh clean           # Clean build with counter reset
 ```
@@ -309,22 +309,15 @@ node validate_merged_interface.js
 ## Project Structure
 ```
 HBIM3/
-├── ComponentInfo/          # Component property management
-├── IFCPropertyReader/      # IFC property reading with caching
-├── ReBuild/               # Build directory containing merged plugin
-│   └── NewPlugin/         # Combined ComponentInfo + IFCPropertyReader (merged)
-├── REREBuild/             # HBIM plugin development directory
-│   └── HBIMComponentEntry/ # HBIM property plugin with add/edit workflow
-├── ComponentInfo.bundle   # Built ComponentInfo plugin (macOS bundle)
-├── MergedPlugin.bundle    # Built merged plugin (macOS bundle)
-├── HBIMComponentEntry.bundle # Built HBIM plugin (macOS bundle, in REREBuild/HBIMComponentEntry/build/Release/)
-├── API.Development.Kit.MAC.29.3100/  # Required API
-├── .sisyphus/             # AI agent planning and session data
-├── AGENTS.md              # This file (primary guide for AI agents)
-└── README.md              # Project overview
-```
-
-**Note**: The `MergedPlugin` directory mentioned in older documentation has been consolidated into `ReBuild/NewPlugin/`. Build the merged plugin from `ReBuild/NewPlugin/` using `./build.sh`.```
+├── REREBuild/             # 主插件源码（HBIMComponentEntry）
+│   ├── Src/
+│   ├── RFIX/
+│   ├── build.sh
+│   └── build/Release/HBIMComponentEntry.bundle
+├── API.Development.Kit.MAC.29.3100/  # ArchiCAD API 开发包
+├── AGENTS.md              # AI 开发指南
+└── README.md              # 项目说明
+``````
 
 ## Notes for AI Agents
 
@@ -421,7 +414,7 @@ static bool HasHBIMProperties(const API_Guid& elementGuid, API_Guid& outIdGuid, 
 ```
 
 ### 构建与测试
-- **构建命令**：`cd REREBuild/HBIMComponentEntry && ./build.sh`
+- **构建命令**：`cd REREBuild && ./build.sh`
 - **版本管理**：日期版本号 (0.month.day.build)
 - **签名**：复用现有Developer ID 625438022, Local ID 170868903
 
