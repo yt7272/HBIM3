@@ -1224,7 +1224,7 @@ void PluginPalette::UpdateFromSelection ()
 	// 使用第一个选中的元素
 	API_Guid elemGuid = selNeigs[0].guid;
 	
-	// 如果切换了元素，取消任何编辑模式
+	// 如果切换了元素，取消任何编辑模式并重置图片索引
 	if (elemGuid != currentElemGuid) {
 		if (isHBIMEditMode) {
 			ExitHBIMEditMode(false);
@@ -1232,6 +1232,7 @@ void PluginPalette::UpdateFromSelection ()
 		if (isImageEditMode) {
 			ExitImageEditMode(false);
 		}
+		currentImageIndex = 0;  // 切换构件时从第一张开始
 	}
 	
 	currentElemGuid = elemGuid;
@@ -1596,7 +1597,10 @@ GSErrCode PluginPalette::SelectionChangeHandler (const API_Neig* selElemNeig)
 	if (HasInstance()) {
 		PluginPalette& instance = GetInstance();
 		
-		// 更新当前选中的构件GUID
+		// 切换构件时重置图片索引，同一构件刷新时保留
+		if (instance.currentElemGuid != selElemNeig->guid) {
+			instance.currentImageIndex = 0;
+		}
 		instance.currentElemGuid = selElemNeig->guid;
 		
 		GS::UniString ifcType = GetIFCTypeForElement(selElemNeig->guid);
@@ -1900,7 +1904,7 @@ void PluginPalette::CheckHBIMImages ()
 	
 	hasHBIMImages = false;
 	imagePaths.Clear();
-	currentImageIndex = 0;
+	// 不在此处重置 currentImageIndex，避免点击图片用系统预览时，因失焦触发刷新而跳回第一张
 	
 	if (projectHash.IsEmpty()) {
 		projectHash = CalculateProjectHash();
@@ -1970,7 +1974,13 @@ void PluginPalette::CheckHBIMImages ()
 	
 	// 更新状态
 	hasHBIMImages = (imagePaths.GetSize() > 0);
-	ACAPI_WriteReport("CheckHBIMImages: 解析完成，imagePaths=%d, hasHBIMImages=%d", false, (int)imagePaths.GetSize(), hasHBIMImages ? 1 : 0);
+	// 仅在无图片时重置索引；有图片时保持 currentImageIndex（避免点击预览触发刷新后跳回第一张），超界时夹紧
+	if (imagePaths.GetSize() == 0) {
+		currentImageIndex = 0;
+	} else if (currentImageIndex >= imagePaths.GetSize()) {
+		currentImageIndex = imagePaths.GetSize() - 1;
+	}
+	ACAPI_WriteReport("CheckHBIMImages: 解析完成，imagePaths=%d, hasHBIMImages=%d, currentImageIndex=%d", false, (int)imagePaths.GetSize(), hasHBIMImages ? 1 : 0, (int)currentImageIndex);
 	isUpdatingImages = false;
 	UpdateHBIMImageUI();
 }
