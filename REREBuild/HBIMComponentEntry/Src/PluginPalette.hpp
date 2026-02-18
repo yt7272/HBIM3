@@ -7,7 +7,9 @@
 
 class PluginPalette : public DG::Palette,
 	public DG::PanelObserver,
-	public DG::ButtonItemObserver
+	public DG::CompoundItemObserver,
+	public DG::ButtonItemObserver,
+	public DG::ImageObserver
 {
 public:
 	static const short PaletteResId = 32520;
@@ -41,7 +43,8 @@ public:
 		ImageNextButtonId = 26,
 		ImagePreviewId = 27,
 		ImageOKButtonId = 28,
-		ImageCancelButtonId = 29
+		ImageCancelButtonId = 29,
+		DiagnosisButtonId = 30   // 诊断按钮：点击显示当前状态，便于调试（ArchiCAD无报告窗口）
 	};
 
 	static GSErrCode PaletteControlCallBack (Int32 paletteId, API_PaletteMessageID messageID, GS::IntPtr param);
@@ -85,17 +88,18 @@ private:
 	DG::LeftText imageSeparator;
 	DG::CenterText imageTitle;
 	DG::LeftText imageTitleUnderline;
-	DG::LeftText imageCountLabel;
-	DG::LeftText imageCountValue;
-	DG::LeftText imageCurrentLabel;
-	DG::LeftText imageCurrentValue;
+	DG::LeftText imageCountLabel;    // 显示 "图片数量: N"
+	DG::LeftText imageCountValue;    // 占位，实际显示用 imageCountLabel
+	DG::LeftText imageCurrentLabel; // 显示 "当前图片: M/N" 或 "当前图片: 无"
+	DG::LeftText imageCurrentValue; // 占位，实际显示用 imageCurrentLabel
 	DG::Button imageSelectButton;
 	DG::Button imageDeleteButton;
 	DG::Button imagePrevButton;
 	DG::Button imageNextButton;
 	DG::Button imageOKButton;
 	DG::Button imageCancelButton;
-	DG::LeftText imagePreview;
+	DG::Button diagnosisButton;
+	DG::PictureItem imagePreview;
 	
 	// HBIM属性状态
 	bool hasHBIMProperties;
@@ -111,6 +115,8 @@ private:
 	// HBIM图片状态
 	bool hasHBIMImages;
 	bool isImageEditMode;
+	bool isUpdatingImages; // 防止CheckHBIMImages和UpdateHBIMImageUI之间的循环调用
+	bool isLoadingImage;   // 防止LoadAndDisplayImage重入
 	GS::Array<GS::UniString> imagePaths;
 	GS::Array<GS::UniString> originalImagePaths; // 用于取消编辑时恢复
 	UInt32 currentImageIndex;
@@ -134,11 +140,13 @@ private:
   	void SelectHBIMImages ();
   	void DeleteCurrentHBIMImage ();
   	void NavigateHBIMImage (bool forward);
-  	void EnterImageEditMode ();
-  	void ExitImageEditMode (bool save);
-  	GSErrCode EnsureHBIMImageFolder ();
-  	GS::UniString CalculateProjectHash ();
-  	bool IsProjectSaved ();
+   	void EnterImageEditMode ();
+   	void ExitImageEditMode (bool save);
+   	void LoadAndDisplayImage (const IO::Location& imageLocation, DG::PictureItem& pictureItem);
+   	GSErrCode EnsureHBIMImageFolder ();
+   	GS::UniString CalculateProjectHash ();
+   	bool IsProjectSaved ();
+	void ShowDiagnostics ();  // 诊断：显示当前状态（ArchiCAD无报告窗口时便于调试）
 	
 	void SetMenuItemCheckedState (bool checked);
 
@@ -146,6 +154,7 @@ private:
 
 	virtual void PanelCloseRequested (const DG::PanelCloseRequestEvent& ev, bool* accepted) override;
 	virtual void ButtonClicked (const DG::ButtonClickEvent& ev) override;
+	virtual void ImageClicked (const DG::ImageClickEvent& ev) override;
 };
 
 #endif
