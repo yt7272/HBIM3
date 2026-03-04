@@ -44,7 +44,8 @@ public:
 		ImagePreviewId = 27,
 		ImageOKButtonId = 28,
 		ImageCancelButtonId = 29,
-		DiagnosisButtonId = 30   // 诊断按钮：点击显示当前状态，便于调试（ArchiCAD无报告窗口）
+		DiagnosisButtonId = 30,  // 诊断按钮：点击显示当前状态，便于调试（ArchiCAD无报告窗口）
+		LaunchLabelmeButtonId = 31   // 启动labelme（仅在图片编辑模式显示）
 	};
 
 	static GSErrCode PaletteControlCallBack (Int32 paletteId, API_PaletteMessageID messageID, GS::IntPtr param);
@@ -99,6 +100,7 @@ private:
 	DG::Button imageOKButton;
 	DG::Button imageCancelButton;
 	DG::Button diagnosisButton;
+	DG::Button launchLabelmeButton;
 	DG::PictureItem imagePreview;
 	
 	// HBIM属性状态

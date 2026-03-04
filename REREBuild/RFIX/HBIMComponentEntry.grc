@@ -55,6 +55,7 @@
   /* [ 28] */	Button			 20 570  100  24	LargePlain  "确定"
   /* [ 29] */	Button			130 570  100  24	LargePlain  "取消"
   /* [ 30] */	Button			240 570   70  24	LargePlain  "诊断"
+  /* [ 31] */	Button			320 570   80  24	LargePlain  "Labelme"
 }
 
 'DLGH' 32520  DLGH_HBIMComponentEntryPalette {
@@ -88,4 +89,5 @@
  28	""	Button_ImageOK
  29	""	Button_ImageCancel
  30	""	Button_Diagnosis
+ 31	""	Button_LaunchLabelme
 }

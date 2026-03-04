@@ -15,7 +15,15 @@
 #include <iomanip>
 #include <random>
 #include <cstring>
+#include <cstdlib>
 #include <thread>
+
+#if defined(GS_MAC)
+#include <spawn.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <crt_externs.h>
+#endif
 
 // Property API头文件
 #include "APIdefs_Properties.h"
@@ -870,6 +878,104 @@ namespace {
 		err = ACAPI_Element_SetProperty(elemGuid, p);
 		return err;
 	}
+
+	// 检测 labelme 是否存在于系统中
+	__attribute__((unused)) static bool CheckLabelmeExists() {
+		// 检查常见安装路径（conda优先）
+		const char* paths[] = {
+			"/opt/miniconda3/bin/labelme",
+			"/usr/local/bin/labelme",
+			"/opt/homebrew/bin/labelme",
+			"/usr/bin/labelme"
+		};
+		for (const auto& path : paths) {
+			if (std::filesystem::exists(path))
+				return true;
+		}
+		return false;
+	}
+
+#if defined(GS_MAC)
+	static GSErrCode LaunchLabelme(const GS::UniString& imagePath) {
+		struct CandidatePath {
+			const char* python;
+			const char* labelme;
+		};
+		const CandidatePath candidates[] = {
+			{"/opt/miniconda3/bin/python",  "/opt/miniconda3/bin/labelme"},
+			{"/opt/miniconda3/bin/python3", "/opt/miniconda3/bin/labelme"},
+			{"/opt/homebrew/bin/python3",   "/opt/homebrew/bin/labelme"},
+			{"/usr/local/bin/python3",      "/usr/local/bin/labelme"},
+			{"/usr/bin/python3",            "/usr/bin/labelme"}
+		};
+
+		std::string imgPathStr(imagePath.ToCStr().Get());
+		char **envp = *_NSGetEnviron();
+
+		for (const auto& cand : candidates) {
+			if (!std::filesystem::exists(cand.labelme)) continue;
+			ACAPI_WriteReport("LaunchLabelme: 找到 %s", false, cand.labelme);
+
+			// 方式1: posix_spawn python -m labelme (Python 是真正的 Mach-O 可执行文件，最可靠)
+			if (std::filesystem::exists(cand.python)) {
+				ACAPI_WriteReport("LaunchLabelme: 尝试 python -m labelme via %s", false, cand.python);
+				pid_t pid;
+				char* const argv[] = {
+					const_cast<char*>(cand.python),
+					const_cast<char*>("-m"),
+					const_cast<char*>("labelme"),
+					const_cast<char*>(imgPathStr.c_str()),
+					nullptr
+				};
+				int ret = posix_spawn(&pid, cand.python, nullptr, nullptr, argv, envp);
+				if (ret == 0) {
+					ACAPI_WriteReport("LaunchLabelme: posix_spawn 成功, PID=%d, 等待检测崩溃...", false, (int)pid);
+					usleep(500000); // 500ms: 等待检测是否立即崩溃
+					int ws;
+					pid_t r = waitpid(pid, &ws, WNOHANG);
+					if (r == pid) {
+						int exitCode = WIFEXITED(ws) ? WEXITSTATUS(ws) : -1;
+						ACAPI_WriteReport("LaunchLabelme: 进程已退出, exit_code=%d", false, exitCode);
+						if (exitCode != 0) continue; // 崩溃了，尝试下一个候选
+					} else {
+						ACAPI_WriteReport("LaunchLabelme: 进程仍在运行 - 启动成功!", false);
+					}
+					return NoError;
+				}
+				ACAPI_WriteReport("LaunchLabelme: posix_spawn(python) 失败, errno=%d (%s)", false, ret, strerror(ret));
+			}
+
+			// 方式2: posix_spawn 直接运行 labelme 脚本 (依赖 shebang)
+			if (access(cand.labelme, X_OK) == 0) {
+				ACAPI_WriteReport("LaunchLabelme: 尝试直接执行 %s", false, cand.labelme);
+				pid_t pid;
+				char* const argv[] = {
+					const_cast<char*>(cand.labelme),
+					const_cast<char*>(imgPathStr.c_str()),
+					nullptr
+				};
+				int ret = posix_spawn(&pid, cand.labelme, nullptr, nullptr, argv, envp);
+				if (ret == 0) {
+					ACAPI_WriteReport("LaunchLabelme: posix_spawn(script) PID=%d", false, (int)pid);
+					usleep(500000);
+					int ws;
+					pid_t r = waitpid(pid, &ws, WNOHANG);
+					if (r == pid) {
+						int exitCode = WIFEXITED(ws) ? WEXITSTATUS(ws) : -1;
+						ACAPI_WriteReport("LaunchLabelme: 脚本退出, exit_code=%d", false, exitCode);
+						if (exitCode != 0) continue;
+					}
+					return NoError;
+				}
+				ACAPI_WriteReport("LaunchLabelme: posix_spawn(script) 失败, errno=%d (%s)", false, ret, strerror(ret));
+			}
+		}
+
+		ACAPI_WriteReport("LaunchLabelme: 所有候选路径均失败", false);
+		return Error;
+	}
+#endif
+
 }
  
 
@@ -1007,6 +1113,7 @@ PluginPalette::PluginPalette ()
 	, imageOKButton (GetReference (), ImageOKButtonId)
 	, imageCancelButton (GetReference (), ImageCancelButtonId)
 	, diagnosisButton (GetReference (), DiagnosisButtonId)
+	, launchLabelmeButton (GetReference (), LaunchLabelmeButtonId)
 	, imagePreview (GetReference (), ImagePreviewId)
 	, hasHBIMProperties (false)
 	, isHBIMEditMode (false)
@@ -1126,6 +1233,7 @@ PluginPalette::PluginPalette ()
 	imageNextButton.Attach(*this);
 	imageOKButton.Attach(*this);
 	imageCancelButton.Attach(*this);
+	launchLabelmeButton.Attach(*this);
 	diagnosisButton.Attach(*this);
 	
 	// 附加图片预览控件观察者，支持点击预览全尺寸图片
@@ -1137,6 +1245,7 @@ PluginPalette::PluginPalette ()
 	imageNextButton.Disable();
 	imageOKButton.Hide();
 	imageCancelButton.Hide();
+	launchLabelmeButton.Hide();
 	
 	// 初始化图片预览控件 (Picture)
 	imagePreview.Show();
@@ -1735,6 +1844,9 @@ void PluginPalette::UpdateHBIMImageUI ()
 			imageDeleteButton.Enable();
 			imagePrevButton.Enable();
 			imageNextButton.Enable();
+			launchLabelmeButton.SetText("启动labelme");
+			launchLabelmeButton.Show();
+			launchLabelmeButton.Enable();
 			
 			if (currentImageIndex == 0) {
 				imagePrevButton.Disable();
@@ -1746,12 +1858,14 @@ void PluginPalette::UpdateHBIMImageUI ()
 			imageDeleteButton.Disable();
 			imagePrevButton.Disable();
 			imageNextButton.Disable();
+			launchLabelmeButton.Hide();
 		}
 	} else {
-		// 非编辑模式：显示选择/编辑按钮，隐藏确定和取消按钮
+		// 非编辑模式：显示选择/编辑按钮，隐藏确定、取消和启动labelme按钮
 		imageSelectButton.Show();
 		imageOKButton.Hide();
 		imageCancelButton.Hide();
+		launchLabelmeButton.Hide();
 		
 		// 根据是否有图片更新选择按钮文本
 		if (hasHBIMImages && imagePaths.GetSize() > 0) {
@@ -1785,6 +1899,7 @@ void PluginPalette::UpdateHBIMImageUI ()
 	imageNextButton.Redraw();
 	imageOKButton.Redraw();
 	imageCancelButton.Redraw();
+	launchLabelmeButton.Redraw();
 	imagePreview.Redraw();
 	
 	// 强制重绘整个面板以确保UI更新
@@ -2832,6 +2947,39 @@ void PluginPalette::ButtonClicked (const DG::ButtonClickEvent& ev)
 		ExitImageEditMode(true);
 	} else if (ev.GetSource() == &imageCancelButton) {
 		ExitImageEditMode(false);
+	} else if (ev.GetSource() == &launchLabelmeButton) {
+		ACAPI_WriteReport("launchLabelmeButton: 按钮已点击", false);
+		if (!hasHBIMImages || imagePaths.GetSize() == 0 || currentImageIndex >= imagePaths.GetSize()) {
+			DG::InformationAlert("Labelme", "当前没有可用的图片", "确定");
+			return;
+		}
+		IO::Location imageLoc = ResolveImagePath(imagePaths[currentImageIndex]);
+		GS::UniString fullPath;
+		if (imageLoc.ToPath(&fullPath) != NoError || fullPath.IsEmpty()) {
+			DG::InformationAlert("Labelme", "图片路径解析失败，无法打开", "确定");
+			return;
+		}
+		ACAPI_WriteReport("launchLabelmeButton: 图片路径=%s", false, fullPath.ToCStr().Get());
+#if defined (GS_MAC)
+		GSErrCode err = LaunchLabelme(fullPath);
+		if (err != NoError) {
+			GS::UniString msg;
+			msg.Append("未找到可用的 labelme 或启动失败。\n\n");
+			msg.Append("请在终端中确认 labelme 已正确安装:\n");
+			msg.Append("  which labelme\n");
+			msg.Append("  labelme --version\n\n");
+			msg.Append("如未安装，请执行:\n");
+			msg.Append("  pip install labelme\n\n");
+			msg.Append("已搜索路径:\n");
+			msg.Append("  /opt/miniconda3/bin/labelme\n");
+			msg.Append("  /opt/homebrew/bin/labelme\n");
+			msg.Append("  /usr/local/bin/labelme\n");
+			msg.Append("  /usr/bin/labelme");
+			DG::InformationAlert("Labelme 启动失败", msg.ToCStr().Get(), "确定");
+		}
+#elif defined (GS_WIN)
+		DG::InformationAlert("Labelme", "Windows 暂不支持直接启动 labelme", "确定");
+#endif
 	} else if (ev.GetSource() == &diagnosisButton) {
 		ShowDiagnostics();
 	}
@@ -2843,12 +2991,12 @@ void PluginPalette::ImageClicked (const DG::ImageClickEvent& ev)
 		return;
 	if (imagePaths.IsEmpty() || currentImageIndex >= imagePaths.GetSize())
 		return;
-	
 	IO::Location imageLoc = ResolveImagePath(imagePaths[currentImageIndex]);
 	GS::UniString fullPath;
 	if (imageLoc.ToPath(&fullPath) != NoError || fullPath.IsEmpty())
 		return;
 	
+	// 点击图片始终用系统默认程序打开
 #if defined (GS_MAC)
 	IO::Location openCmd("/usr/bin/open");
 	GS::Array<GS::UniString> argv;
@@ -2858,7 +3006,6 @@ void PluginPalette::ImageClicked (const DG::ImageClickEvent& ev)
 		ACAPI_WriteReport("预览图片失败 (错误码: %d)", true, static_cast<int>(err));
 	}
 #elif defined (GS_WIN)
-	// Windows: 使用 explorer.exe 打开文件（使用默认关联程序）
 	IO::Location openCmd("C:\\Windows\\explorer.exe");
 	GS::Array<GS::UniString> argv;
 	argv.Push(fullPath);
